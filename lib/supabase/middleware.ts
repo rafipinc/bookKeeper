@@ -27,10 +27,12 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
+  const auth = supabase.auth as {
+    getUser: () => Promise<{ data: { user: { id: string } | null } }>;
+  };
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+    data: { user },
+  } = await auth.getUser();
 
   const { pathname } = request.nextUrl;
   const isProtectedRoute =
