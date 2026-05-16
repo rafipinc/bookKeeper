@@ -27,23 +27,25 @@ export default function BusinessProfileForm() {
 
   return (
     <section className="flex flex-1 items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-sm md:max-w-md md:p-8">
-        <Briefcase className="h-7 w-7 text-blue-700" />
-        <h1 className="mt-3 text-xl font-semibold tracking-tight">Tell us about your business</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white/95 p-6 shadow-xl shadow-slate-900/5 md:max-w-md md:p-8 dark:border-slate-700 dark:bg-slate-900/90 dark:shadow-black/30">
+        <Briefcase className="h-7 w-7 text-blue-700 dark:text-blue-400" />
+        <h1 className="mt-3 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+          Tell us about your business
+        </h1>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
           We&apos;ll use this to organise your ledger. You can change it later.
         </p>
 
         <form action={formAction} className="mt-6 space-y-4">
           <div>
-            <label className="text-sm font-medium" htmlFor="name">
+            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-200" htmlFor="name">
               Business name
             </label>
             <input
               aria-required="true"
               autoComplete="organization"
               autoFocus
-              className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               disabled={isPending}
               id="name"
               maxLength={80}
@@ -55,12 +57,12 @@ export default function BusinessProfileForm() {
           </div>
 
           <div>
-            <label className="text-sm font-medium" htmlFor="businessType">
+            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-200" htmlFor="businessType">
               Business type (optional)
             </label>
             <input
               autoComplete="off"
-              className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               disabled={isPending}
               id="businessType"
               maxLength={60}
@@ -70,7 +72,7 @@ export default function BusinessProfileForm() {
             />
           </div>
 
-          {state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+          {state.error ? <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p> : null}
 
           <button
             className="mt-2 w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
