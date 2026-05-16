@@ -1,11 +1,5 @@
-import path from "path";
-import { fileURLToPath } from "url";
 import type { NextConfig } from "next";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const nextConfig: NextConfig = {
-  outputFileTracingRoot: __dirname,
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
