@@ -57,3 +57,6 @@ pnpm dlx vercel --prod
 ```
 
 After linking, connect the GitHub repo in Vercel so pushes to `main` create production deployments and PRs create preview deployments.
+
+
+Branching model: feature branches target develop.
