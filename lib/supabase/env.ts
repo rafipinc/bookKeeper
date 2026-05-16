@@ -1,12 +1,9 @@
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl) {
-  throw new Error("Missing env var: NEXT_PUBLIC_SUPABASE_URL");
+function missingEnv(name: string): never {
+  throw new Error(`Missing env var: ${name}`);
 }
 
-if (!supabaseAnonKey) {
-  throw new Error("Missing env var: NEXT_PUBLIC_SUPABASE_ANON_KEY");
-}
+export const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? missingEnv("NEXT_PUBLIC_SUPABASE_URL");
 
-export { supabaseAnonKey, supabaseUrl };
+export const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? missingEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
