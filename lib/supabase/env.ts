@@ -1,12 +1,12 @@
-function requireEnv(name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_ANON_KEY"): string {
-  const value = process.env[name];
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!value) {
-    throw new Error(`Missing env var: ${name}`);
-  }
-
-  return value;
+if (!supabaseUrl) {
+  throw new Error("Missing env var: NEXT_PUBLIC_SUPABASE_URL");
 }
 
-export const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-export const supabaseAnonKey = requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+if (!supabaseAnonKey) {
+  throw new Error("Missing env var: NEXT_PUBLIC_SUPABASE_ANON_KEY");
+}
+
+export { supabaseAnonKey, supabaseUrl };
