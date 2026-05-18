@@ -1,28 +1,9 @@
-import { redirect } from "next/navigation";
-
-import { signOut } from "@/app/actions/auth";
-import BusinessProfileForm from "@/app/(app)/business-profile-form";
 import { DesktopNav, MobileNav } from "@/app/(app)/nav-links";
-import { createClient } from "@/lib/supabase/server";
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user?.email) {
-    redirect("/login");
-  }
-
-  const { data: business } = await supabase
-    .from("businesses")
-    .select("id")
-    .eq("owner_id", user.id)
-    .limit(1)
-    .maybeSingle();
-
-  const hasBusiness = Boolean(business?.id);
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  // Temporary auth bypass mode for MVP UI iteration.
+  const hasBusiness = true;
+  const userEmail = "guest@local";
 
   return (
     <div className="flex h-svh flex-col md:flex-row">
@@ -35,21 +16,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <header className="flex h-14 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-4">
           <p className="text-base font-semibold text-[var(--text-primary)] md:text-sm md:font-medium">bookkeeping</p>
           <div className="flex items-center gap-3">
-            <p className="text-sm text-[var(--text-secondary)]">{user.email}</p>
-            <form action={signOut}>
-              <button
-                className="rounded-[var(--radius-button)] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--paper)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
-                type="submit"
-              >
-                Sign out
-              </button>
-            </form>
+            <p className="text-sm text-[var(--text-secondary)]">{userEmail}</p>
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-4 pb-20 md:p-6 md:pb-6">
-          {hasBusiness ? children : <BusinessProfileForm />}
-        </main>
+        <main className="flex-1 overflow-auto p-4 pb-20 md:p-6 md:pb-6">{children}</main>
       </div>
 
       {hasBusiness ? <MobileNav /> : null}
