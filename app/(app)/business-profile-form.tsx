@@ -3,6 +3,7 @@
 import { Briefcase, Loader2 } from "lucide-react";
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import {
   createBusiness,
@@ -17,13 +18,19 @@ export default function BusinessProfileForm() {
     createBusiness,
     createBusinessInitialState,
   );
+  const [didSubmit, setDidSubmit] = useState(false);
 
   useEffect(() => {
-    if (!isPending && !state.error) {
+    if (didSubmit && !isPending && !state.error) {
       router.push("/dashboard");
       router.refresh();
     }
-  }, [isPending, router, state.error]);
+  }, [didSubmit, isPending, router, state.error]);
+
+  async function handleSubmit(formData: FormData) {
+    setDidSubmit(true);
+    await formAction(formData);
+  }
 
   return (
     <section className="flex flex-1 items-center justify-center px-4">
@@ -34,7 +41,7 @@ export default function BusinessProfileForm() {
           We&apos;ll use this to organise your ledger. You can change it later.
         </p>
 
-        <form action={formAction} className="mt-6 space-y-4">
+        <form action={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label className="text-sm font-medium" htmlFor="name">
               Business name
