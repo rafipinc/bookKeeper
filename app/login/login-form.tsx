@@ -48,7 +48,7 @@ export default function LoginPage() {
     setIsPending(false);
 
     if (authError) {
-      setError("Hmm, that didn't work. Check your email and try again.");
+      setError("Couldn't send the link. Check the email address and try again.");
       return;
     }
 
@@ -72,20 +72,20 @@ export default function LoginPage() {
   const canSubmit = email.includes("@") && !isPending;
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-gradient-to-b from-zinc-100 to-zinc-200/50 px-4 dark:from-slate-950 dark:to-slate-900">
-      <section className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white/95 p-6 shadow-xl shadow-slate-900/5 md:max-w-md md:p-8 dark:border-slate-700 dark:bg-slate-900/90 dark:shadow-black/30">
-        <h1 className="text-2xl font-semibold tracking-tight text-blue-700 dark:text-blue-400">bookkeeping-app</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">Bookkeeping that respects your time.</p>
+    <main className="min-h-svh bg-[var(--paper)] px-4 flex items-center justify-center">
+      <section className="bkp-card w-full max-w-sm p-6 md:max-w-md md:p-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--ink)]">bookkeeping-app</h1>
+        <p className="mt-1 text-[15px] text-[var(--text-secondary)]">Lean accounting for solo operators.</p>
 
         {sentEmail ? (
           <div className="mt-6 text-center">
-            <MailCheck aria-hidden className="mx-auto h-10 w-10 text-blue-700" />
-            <h2 className="mt-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Check your email</h2>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+            <MailCheck aria-hidden className="mx-auto h-10 w-10 text-[var(--ink)]" />
+            <h2 className="mt-3 text-lg font-semibold">Check your email</h2>
+            <p className="mt-2 text-[15px] text-[var(--text-secondary)]">
               We sent a sign-in link to <strong>{sentEmail}</strong>. Tap it to come back here.
             </p>
             <button
-              className="mt-4 text-sm font-medium text-blue-700 disabled:text-zinc-400 dark:text-blue-300 dark:disabled:text-zinc-500"
+              className="mt-4 text-sm font-medium text-[var(--ink)] disabled:text-[var(--text-muted)]"
               disabled={cooldown > 0 || isPending}
               onClick={handleResend}
               type="button"
@@ -96,13 +96,13 @@ export default function LoginPage() {
         ) : (
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-200" htmlFor="email">
+              <label className="text-sm font-medium" htmlFor="email">
                 Email address
               </label>
               <input
                 aria-describedby={error ? "email-error" : undefined}
                 autoComplete="email"
-                className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                className="bkp-input mt-1 block w-full px-3 py-2 text-sm"
                 disabled={isPending}
                 id="email"
                 inputMode="email"
@@ -113,14 +113,14 @@ export default function LoginPage() {
                 value={email}
               />
               {error ? (
-                <p className="mt-2 text-sm text-red-600" id="email-error">
+                <p className="mt-2 text-sm text-[var(--expense)]" id="email-error">
                   {error}
                 </p>
               ) : null}
             </div>
             <button
               aria-busy={isPending}
-              className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+              className="bkp-button w-full px-4 py-2 text-sm transition-colors"
               disabled={!canSubmit}
               type="submit"
             >

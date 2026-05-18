@@ -25,24 +25,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const hasBusiness = Boolean(business?.id);
 
   return (
-    <div className="flex h-svh flex-col bg-zinc-100 text-zinc-900 dark:bg-slate-950 dark:text-zinc-100 md:flex-row">
-      <aside className="hidden h-svh w-60 shrink-0 border-r border-zinc-200 bg-white/90 backdrop-blur md:sticky md:top-0 md:flex md:flex-col dark:border-slate-800 dark:bg-slate-900/80">
-        <div className="flex h-14 items-center px-4 text-lg font-semibold tracking-tight text-blue-700 dark:text-blue-400">
-          bookkeeping
-        </div>
+    <div className="flex h-svh flex-col md:flex-row">
+      <aside className="hidden h-svh w-60 shrink-0 border-r border-[var(--border)] bg-[var(--surface)] md:sticky md:top-0 md:flex md:flex-col">
+        <div className="flex h-14 items-center px-4 text-lg font-semibold text-[var(--ink)]">bookkeeping</div>
         <DesktopNav disabled={!hasBusiness} />
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="flex h-14 items-center justify-between border-b border-zinc-200 bg-white/85 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
-          <p className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-sm md:font-medium">
-            bookkeeping
-          </p>
+        <header className="flex h-14 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-4">
+          <p className="text-base font-semibold text-[var(--text-primary)] md:text-sm md:font-medium">bookkeeping</p>
           <div className="flex items-center gap-3">
-            <p className="text-sm text-zinc-600 dark:text-zinc-300">{user.email}</p>
+            <p className="text-sm text-[var(--text-secondary)]">{user.email}</p>
             <form action={signOut}>
               <button
-                className="rounded-md border border-zinc-300 bg-white/70 px-3 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-800/60 dark:text-zinc-200 dark:hover:bg-slate-800"
+                className="rounded-[var(--radius-button)] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--paper)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
                 type="submit"
               >
                 Sign out
@@ -51,7 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto bg-gradient-to-b from-transparent via-zinc-100/20 to-zinc-200/30 p-4 pb-20 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900/60 md:p-6 md:pb-6">
+        <main className="flex-1 overflow-auto p-4 pb-20 md:p-6 md:pb-6">
           {hasBusiness ? children : <BusinessProfileForm />}
         </main>
       </div>
