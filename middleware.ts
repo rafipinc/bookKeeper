@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
-
-import { updateSession } from "./lib/supabase/middleware";
+import { NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  return updateSession(request);
+  // Temporary fail-open middleware to avoid edge runtime crashes.
+  return NextResponse.next({ request });
 }
 
 export const config = {

@@ -27,10 +27,10 @@ export default function BusinessProfileForm() {
 
   return (
     <section className="flex flex-1 items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-sm md:max-w-md md:p-8">
-        <Briefcase className="h-7 w-7 text-blue-700" />
+      <div className="bkp-card w-full max-w-sm p-6 md:max-w-md md:p-8">
+        <Briefcase className="h-7 w-7 text-[var(--ink)]" />
         <h1 className="mt-3 text-xl font-semibold tracking-tight">Tell us about your business</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-[15px] text-[var(--text-secondary)]">
           We&apos;ll use this to organise your ledger. You can change it later.
         </p>
 
@@ -43,7 +43,7 @@ export default function BusinessProfileForm() {
               aria-required="true"
               autoComplete="organization"
               autoFocus
-              className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bkp-input mt-1 block w-full px-3 py-2 text-sm"
               disabled={isPending}
               id="name"
               maxLength={80}
@@ -60,7 +60,7 @@ export default function BusinessProfileForm() {
             </label>
             <input
               autoComplete="off"
-              className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bkp-input mt-1 block w-full px-3 py-2 text-sm"
               disabled={isPending}
               id="businessType"
               maxLength={60}
@@ -70,10 +70,10 @@ export default function BusinessProfileForm() {
             />
           </div>
 
-          {state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+          {state.error ? <p className="text-sm text-[var(--expense)]">{state.error}</p> : null}
 
           <button
-            className="mt-2 w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+            className="bkp-button mt-2 w-full px-4 py-2 text-sm transition-colors"
             disabled={isPending}
             type="submit"
           >
