@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-
-import LoginForm from "@/app/login/login-form";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Sign in — bookkeeping-app",
+  title: "Dashboard — bookkeeping-app",
 };
 
 export default function LoginPage() {
-  return <LoginForm />;
+  redirect("/dashboard");
 }
