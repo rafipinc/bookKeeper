@@ -8,10 +8,6 @@ type CreateTransactionState = {
   error: string | null;
 };
 
-export const createTransactionInitialState: CreateTransactionState = {
-  error: null,
-};
-
 function dollarsToCents(value: string) {
   const normalized = value.trim();
   if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
@@ -83,5 +79,5 @@ export async function createTransaction(
 
   revalidatePath("/dashboard");
   revalidatePath("/ledger");
-  return createTransactionInitialState;
+  return { error: null };
 }

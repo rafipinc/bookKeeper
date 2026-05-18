@@ -7,7 +7,6 @@ import { useState } from "react";
 
 import {
   createBusiness,
-  createBusinessInitialState,
   type CreateBusinessState,
 } from "@/app/actions/business";
 
@@ -16,7 +15,7 @@ export default function BusinessProfileForm() {
 
   const [state, formAction, isPending] = useActionState<CreateBusinessState, FormData>(
     createBusiness,
-    createBusinessInitialState,
+    { error: null },
   );
   const [didSubmit, setDidSubmit] = useState(false);
 

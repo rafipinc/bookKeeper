@@ -5,7 +5,6 @@ import { useActionState } from "react";
 
 import {
   createTransaction,
-  createTransactionInitialState,
 } from "@/app/actions/transactions";
 
 type CategoryOption = {
@@ -25,7 +24,7 @@ export default function AddTransactionForm({
 }) {
   const [state, formAction, isPending] = useActionState(
     createTransaction,
-    createTransactionInitialState,
+    { error: null },
   );
 
   return (

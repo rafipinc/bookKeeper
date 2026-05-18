@@ -8,10 +8,6 @@ export type CreateBusinessState = {
   error: string | null;
 };
 
-const initialState: CreateBusinessState = {
-  error: null,
-};
-
 export async function createBusiness(
   _previousState: CreateBusinessState,
   formData: FormData,
@@ -40,7 +36,7 @@ export async function createBusiness(
 
   if (error) {
     if (error.code === "23505") {
-      return initialState;
+      return { error: null };
     }
 
     return { error: "Couldn't save your business. Try again." };
@@ -49,7 +45,5 @@ export async function createBusiness(
   revalidatePath("/dashboard");
   revalidatePath("/ledger");
 
-  return initialState;
+  return { error: null };
 }
-
-export { initialState as createBusinessInitialState };
