@@ -1,4 +1,5 @@
 import AddTransactionForm from "@/app/(app)/add-transaction-form";
+import SeedDemoDataForm from "@/app/(app)/seed-demo-data-form";
 import { createClient } from "@/lib/supabase/server";
 
 function formatMoney(amountCents: number) {
@@ -94,6 +95,7 @@ export default async function DashboardPage() {
       </div>
 
       <AddTransactionForm categories={categories ?? []} />
+      <SeedDemoDataForm />
 
       <div className="bkp-card overflow-hidden">
         <div className="border-b border-[var(--border)] px-4 py-3">
