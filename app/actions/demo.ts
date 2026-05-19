@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
 
 export type SeedDemoState = {
   error: string | null;
@@ -32,10 +33,13 @@ export async function seedDemoData(
     return { error: "You must be signed in.", message: null };
   }
 
+  const platformTenantId = await ensureUserPlatformTenant(supabase, user.id);
+
   const { data: business } = await supabase
     .from("businesses")
-    .select("id")
+    .select("id,platform_tenant_id")
     .eq("owner_id", user.id)
+    .eq("platform_tenant_id", platformTenantId)
     .limit(1)
     .single();
 
@@ -46,6 +50,7 @@ export async function seedDemoData(
   const { data: existingDemoRows } = await supabase
     .from("transactions")
     .select("id")
+    .eq("platform_tenant_id", business.platform_tenant_id)
     .eq("business_id", business.id)
     .ilike("note", "[demo]%")
     .limit(1);
@@ -57,6 +62,7 @@ export async function seedDemoData(
   const { data: categories } = await supabase
     .from("categories")
     .select("id,name,kind")
+    .eq("platform_tenant_id", business.platform_tenant_id)
     .eq("business_id", business.id);
 
   if (!categories || categories.length === 0) {
@@ -87,6 +93,7 @@ export async function seedDemoData(
   const rows = [
     {
       business_id: business.id,
+      platform_tenant_id: business.platform_tenant_id,
       category_id: salesId,
       type: "income" as const,
       amount_cents: 420000,
@@ -96,6 +103,7 @@ export async function seedDemoData(
     },
     {
       business_id: business.id,
+      platform_tenant_id: business.platform_tenant_id,
       category_id: salesId,
       type: "income" as const,
       amount_cents: 185000,
@@ -105,6 +113,7 @@ export async function seedDemoData(
     },
     {
       business_id: business.id,
+      platform_tenant_id: business.platform_tenant_id,
       category_id: softwareId,
       type: "expense" as const,
       amount_cents: 4900,
@@ -114,6 +123,7 @@ export async function seedDemoData(
     },
     {
       business_id: business.id,
+      platform_tenant_id: business.platform_tenant_id,
       category_id: mealsId,
       type: "expense" as const,
       amount_cents: 3600,
@@ -123,6 +133,7 @@ export async function seedDemoData(
     },
     {
       business_id: business.id,
+      platform_tenant_id: business.platform_tenant_id,
       category_id: marketingId,
       type: "expense" as const,
       amount_cents: 12500,
@@ -132,6 +143,7 @@ export async function seedDemoData(
     },
     {
       business_id: business.id,
+      platform_tenant_id: business.platform_tenant_id,
       category_id: contractorsId,
       type: "expense" as const,
       amount_cents: 65000,

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
 
 export type CreateBusinessState = {
   error: string | null;
@@ -28,17 +29,24 @@ export async function createBusiness(
     return { error: "Couldn't save your business. Try again." };
   }
 
-  const { error } = await supabase.from("businesses").insert({
-    owner_id: user.id,
-    name,
-    business_type: businessTypeRaw || null,
-  });
+  try {
+    const platformTenantId = await ensureUserPlatformTenant(supabase, user.id);
 
-  if (error) {
-    if (error.code === "23505") {
-      return { error: null };
+    const { error } = await supabase.from("businesses").insert({
+      platform_tenant_id: platformTenantId,
+      owner_id: user.id,
+      name,
+      business_type: businessTypeRaw || null,
+    });
+
+    if (error) {
+      if (error.code === "23505") {
+        return { error: null };
+      }
+
+      return { error: "Couldn't save your business. Try again." };
     }
-
+  } catch {
     return { error: "Couldn't save your business. Try again." };
   }
 

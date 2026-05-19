@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
 
 type CreateTransactionState = {
   error: string | null;
@@ -52,10 +53,13 @@ export async function createTransaction(
     return { error: "You must be signed in." };
   }
 
+  const platformTenantId = await ensureUserPlatformTenant(supabase, user.id);
+
   const { data: business } = await supabase
     .from("businesses")
-    .select("id")
+    .select("id,platform_tenant_id")
     .eq("owner_id", user.id)
+    .eq("platform_tenant_id", platformTenantId)
     .limit(1)
     .single();
 
@@ -64,6 +68,7 @@ export async function createTransaction(
   }
 
   const { error } = await supabase.from("transactions").insert({
+    platform_tenant_id: business.platform_tenant_id,
     business_id: business.id,
     category_id: categoryId,
     type,

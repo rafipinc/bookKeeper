@@ -6,32 +6,40 @@ type DbError = { code?: string; message?: string } | null;
 type SupabaseMockOptions = {
   user?: User;
   businessId?: string | null;
+  platformTenantId?: string;
   businessesInsertError?: DbError;
   transactionsInsertError?: DbError;
+  rpcError?: DbError;
 };
 
 export function makeSupabaseMock(options: SupabaseMockOptions = {}) {
   const {
     user = { id: "user-1" },
     businessId = "business-1",
+    platformTenantId = "tenant-1",
     businessesInsertError = null,
     transactionsInsertError = null,
+    rpcError = null,
   } = options;
 
   const from = vi.fn((table: string) => {
     if (table === "businesses") {
+      const businessQuery = {
+        eq: vi.fn(() => businessQuery),
+        limit: vi.fn(() => businessQuery),
+        single: vi.fn(async () => ({
+          data: businessId ? { id: businessId, platform_tenant_id: platformTenantId } : null,
+          error: null,
+        })),
+        maybeSingle: vi.fn(async () => ({
+          data: businessId ? { id: businessId, platform_tenant_id: platformTenantId } : null,
+          error: null,
+        })),
+      };
+
       return {
         insert: vi.fn(async () => ({ error: businessesInsertError })),
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            limit: vi.fn(() => ({
-              single: vi.fn(async () => ({
-                data: businessId ? { id: businessId } : null,
-                error: null,
-              })),
-            })),
-          })),
-        })),
+        select: vi.fn(() => businessQuery),
       };
     }
 
@@ -48,6 +56,7 @@ export function makeSupabaseMock(options: SupabaseMockOptions = {}) {
     auth: {
       getUser: vi.fn(async () => ({ data: { user } })),
     },
+    rpc: vi.fn(async () => ({ data: platformTenantId, error: rpcError })),
     from,
   };
 }

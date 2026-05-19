@@ -4,6 +4,7 @@ import { signOut } from "@/app/actions/auth";
 import BusinessProfileForm from "@/app/(app)/business-profile-form";
 import { DesktopNav, MobileNav } from "@/app/(app)/nav-links";
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -15,10 +16,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/login");
   }
 
+  const platformTenantId = await ensureUserPlatformTenant(supabase, user.id);
+
   const { data: business } = await supabase
     .from("businesses")
     .select("id")
     .eq("owner_id", user.id)
+    .eq("platform_tenant_id", platformTenantId)
     .limit(1)
     .maybeSingle();
 

@@ -1,5 +1,6 @@
 import AddTransactionForm from "@/app/(app)/add-transaction-form";
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
 
 function formatMoney(amountCents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -18,10 +19,13 @@ export default async function LedgerPage() {
     return null;
   }
 
+  const platformTenantId = await ensureUserPlatformTenant(supabase, user.id);
+
   const { data: business } = await supabase
     .from("businesses")
-    .select("id")
+    .select("id,platform_tenant_id")
     .eq("owner_id", user.id)
+    .eq("platform_tenant_id", platformTenantId)
     .limit(1)
     .single();
 
@@ -32,6 +36,7 @@ export default async function LedgerPage() {
   const { data: categories } = await supabase
     .from("categories")
     .select("id,name,kind")
+    .eq("platform_tenant_id", business.platform_tenant_id)
     .eq("business_id", business.id)
     .order("kind", { ascending: true })
     .order("name", { ascending: true });
@@ -39,6 +44,7 @@ export default async function LedgerPage() {
   const { data: transactions } = await supabase
     .from("transactions")
     .select("id,type,amount_cents,date,note,categories(name)")
+    .eq("platform_tenant_id", business.platform_tenant_id)
     .eq("business_id", business.id)
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })

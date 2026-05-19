@@ -1,0 +1,46 @@
+name: Release Tag
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-tag-main
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag main merge
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create v0 sprint tag
+        env:
+          RELEASE_SPRINT: ${{ vars.RELEASE_SPRINT || '0' }}
+        run: |
+          set -euo pipefail
+
+          git fetch --tags --force
+
+          prefix="v0.${RELEASE_SPRINT}."
+          latest="$(git tag --list "${prefix}*" --sort=-v:refname | head -n 1)"
+
+          if [ -z "$latest" ]; then
+            next_minor=0
+          else
+            latest_minor="${latest##*.}"
+            next_minor="$((latest_minor + 1))"
+          fi
+
+          tag="${prefix}${next_minor}"
+          git tag "$tag" "$GITHUB_SHA"
+          git push origin "$tag"
