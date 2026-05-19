@@ -24,6 +24,7 @@ tests/e2e/.auth/*.json
 # misc
 .DS_Store
 *.pem
+.claude/worktrees/
 
 # debug
 npm-debug.log*
