@@ -72,13 +72,32 @@ users_without_tenants as (
     from public.platform_tenant_members ptm
     where ptm.user_id = nu.user_id
   )
+)
+insert into public.platform_tenants (name, slug)
+select tenant_name, tenant_slug
+from users_without_tenants
+on conflict (slug) do nothing;
+
+with numbered_users as (
+  select
+    u.id as user_id,
+    u.email,
+    row_number() over (
+      partition by lower(coalesce(nullif(split_part(u.email, '@', 1), ''), left(u.id::text, 8)))
+      order by u.created_at, u.id
+    ) as slug_position
+  from auth.users u
 ),
-inserted_tenants as (
-  insert into public.platform_tenants (name, slug)
-  select tenant_name, tenant_slug
-  from users_without_tenants
-  on conflict (slug) do nothing
-  returning id, slug
+users_without_tenants as (
+  select
+    nu.user_id,
+    public.platform_tenant_slug_from_email(nu.email, nu.user_id, nu.slug_position) as tenant_slug
+  from numbered_users nu
+  where not exists (
+    select 1
+    from public.platform_tenant_members ptm
+    where ptm.user_id = nu.user_id
+  )
 )
 insert into public.platform_tenant_members (platform_tenant_id, user_id, role)
 select pt.id, uwt.user_id, 'admin'
