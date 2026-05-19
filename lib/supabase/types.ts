@@ -723,6 +723,41 @@ export type Database = {
         };
         Relationships: [];
       };
+      xero_oauth_states: {
+        Row: {
+          id: string;
+          state: string;
+          user_id: string;
+          platform_tenant_id: string;
+          created_at: string;
+          expires_at: string;
+        };
+        Insert: {
+          id?: string;
+          state: string;
+          user_id: string;
+          platform_tenant_id: string;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Update: {
+          id?: string;
+          state?: string;
+          user_id?: string;
+          platform_tenant_id?: string;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "xero_oauth_states_platform_tenant_id_fkey";
+            columns: ["platform_tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "platform_tenants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
