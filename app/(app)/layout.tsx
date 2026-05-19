@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { signOut } from "@/app/actions/auth";
 import BusinessProfileForm from "@/app/(app)/business-profile-form";
 import { DesktopNav, MobileNav } from "@/app/(app)/nav-links";
+import { ReauthBanner } from "@/app/(app)/reauth-banner";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
 
@@ -28,6 +29,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const hasBusiness = Boolean(business?.id);
   const userEmail = user.email;
+  const { data: reauthConnection } = hasBusiness
+    ? await supabase
+        .from("xero_connections")
+        .select("xero_tenant_name,xero_tenant_id")
+        .eq("platform_tenant_id", platformTenantId)
+        .eq("status", "reauth_required")
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
 
   return (
     <div className="flex h-svh flex-col md:flex-row">
@@ -51,6 +61,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </form>
           </div>
         </header>
+
+        <ReauthBanner connection={reauthConnection ?? null} />
 
         <main className="flex-1 overflow-auto p-4 pb-20 md:p-6 md:pb-6">
           {hasBusiness ? children : <BusinessProfileForm />}
