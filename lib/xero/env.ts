@@ -22,15 +22,34 @@ export const xeroEnv = {
   },
 };
 
-/** Scopes requested during the OAuth authorize step. */
+/**
+ * Scopes requested during the OAuth authorize step.
+ *
+ * NOTE: This app was created after 2 March 2026, so it must use the new
+ * granular scopes. The old broad scope `accounting.transactions` is not
+ * available and causes Xero to return Error 500 during the OAuth flow.
+ *
+ * Granular replacements for `accounting.transactions`:
+ *   - accounting.banktransactions  → bank transactions + transfers (core sync)
+ *   - accounting.invoices          → invoices, credit notes, purchase orders
+ *   - accounting.payments          → payments, batch payments, prepayments
+ *
+ * Unchanged scopes (not affected by the March 2026 change):
+ *   - accounting.contacts          → contacts / vendors
+ *   - accounting.settings          → chart of accounts, tax rates, currencies
+ *
+ * See: https://developer.xero.com/documentation/guides/oauth2/scopes/
+ */
 export const XERO_SCOPES = [
   "openid",
   "profile",
   "email",
   "offline_access",
-  "accounting.transactions",
   "accounting.contacts",
   "accounting.settings",
+  "accounting.banktransactions",
+  "accounting.invoices",
+  "accounting.payments",
 ] as const;
 
 export const XERO_AUTHORIZE_URL = "https://login.xero.com/identity/connect/authorize";

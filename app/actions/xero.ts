@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { inngest } from "@/lib/inngest/client";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
+import { disconnectConnection } from "@/lib/xero/tokens";
 
 async function getUserTenant() {
   const supabase = await createClient();
@@ -53,15 +54,18 @@ export async function syncXeroConnection(connectionId: string) {
 export async function disconnectXeroConnection(connectionId: string) {
   const { supabase, platformTenantId } = await getUserTenant();
 
-  const { error } = await supabase
+  const { data: connection, error } = await supabase
     .from("xero_connections")
-    .update({ status: "disconnected" })
+    .select("id")
     .eq("platform_tenant_id", platformTenantId)
-    .eq("id", connectionId);
+    .eq("id", connectionId)
+    .single();
 
-  if (error) {
-    throw new Error("Could not disconnect the Xero connection.");
+  if (error || !connection) {
+    throw new Error("Xero connection not found.");
   }
+
+  await disconnectConnection(connection.id);
 
   revalidatePath("/settings/integrations");
   revalidatePath("/dashboard");

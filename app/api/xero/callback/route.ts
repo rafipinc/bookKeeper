@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { summarizeValue, xeroDebug, xeroError } from "@/lib/xero/debug";
 import { exchangeCodeForTokens, fetchXeroConnections } from "@/lib/xero/oauth";
 import { encryptToken } from "@/lib/xero/tokens";
 
@@ -22,12 +23,26 @@ export async function GET(request: NextRequest): Promise<Response> {
   const state = searchParams.get("state");
   const oauthError = searchParams.get("error");
 
+  xeroDebug("callback_received", {
+    url: request.nextUrl.pathname,
+    hasCode: Boolean(code),
+    code: summarizeValue(code),
+    state: summarizeValue(state),
+    scope: searchParams.get("scope"),
+    sessionState: summarizeValue(searchParams.get("session_state")),
+    providerError: oauthError,
+  });
+
   if (oauthError) {
-    console.error("[xero.callback] provider returned error", oauthError);
+    xeroError("provider_returned_error", oauthError);
     return redirectToSettings("xero_denied");
   }
 
   if (!code || !state) {
+    xeroDebug("callback_missing_params", {
+      hasCode: Boolean(code),
+      hasState: Boolean(state),
+    });
     return redirectToSettings("missing_params");
   }
 
@@ -38,8 +53,15 @@ export async function GET(request: NextRequest): Promise<Response> {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
+    xeroError("callback_user_lookup_failed", userError ?? "No authenticated Supabase user", {
+      hasUser: Boolean(user),
+    });
     return NextResponse.redirect(new URL("/login?next=/settings/integrations", baseUrl()));
   }
+
+  xeroDebug("callback_user_resolved", {
+    userId: user.id,
+  });
 
   // Verify (and atomically consume) the state row. RLS scopes this to the
   // current user, so a forged state belonging to another account is invisible.
@@ -52,15 +74,31 @@ export async function GET(request: NextRequest): Promise<Response> {
     .maybeSingle();
 
   if (stateError) {
-    console.error("[xero.callback] state lookup failed", stateError);
+    xeroError("state_lookup_failed", stateError, {
+      userId: user.id,
+      state: summarizeValue(state),
+    });
     return redirectToSettings("state_lookup_failed");
   }
 
   if (!stateRow) {
+    xeroDebug("state_mismatch", {
+      userId: user.id,
+      state: summarizeValue(state),
+    });
     return redirectToSettings("state_mismatch");
   }
 
+  xeroDebug("state_consumed", {
+    platformTenantId: stateRow.platform_tenant_id,
+    expiresAt: stateRow.expires_at,
+  });
+
   if (new Date(stateRow.expires_at).getTime() < Date.now()) {
+    xeroDebug("state_expired", {
+      platformTenantId: stateRow.platform_tenant_id,
+      expiresAt: stateRow.expires_at,
+    });
     return redirectToSettings("state_expired");
   }
 
@@ -68,7 +106,10 @@ export async function GET(request: NextRequest): Promise<Response> {
   try {
     tokens = await exchangeCodeForTokens(code);
   } catch (error) {
-    console.error("[xero.callback] token exchange failed", error);
+    xeroError("token_exchange_failed", error, {
+      platformTenantId: stateRow.platform_tenant_id,
+      code: summarizeValue(code),
+    });
     return redirectToSettings("token_exchange_failed");
   }
 
@@ -76,18 +117,38 @@ export async function GET(request: NextRequest): Promise<Response> {
   try {
     connections = await fetchXeroConnections(tokens.access_token);
   } catch (error) {
-    console.error("[xero.callback] connections lookup failed", error);
+    xeroError("connections_lookup_failed", error, {
+      platformTenantId: stateRow.platform_tenant_id,
+    });
     return redirectToSettings("connections_lookup_failed");
   }
 
   if (!connections.length) {
+    xeroDebug("no_connections_returned", {
+      platformTenantId: stateRow.platform_tenant_id,
+    });
     return redirectToSettings("no_connections");
   }
 
-  const [encryptedAccessToken, encryptedRefreshToken] = await Promise.all([
-    encryptToken(tokens.access_token),
-    encryptToken(tokens.refresh_token),
-  ]);
+  let encryptedAccessToken: string;
+  let encryptedRefreshToken: string;
+  try {
+    [encryptedAccessToken, encryptedRefreshToken] = await Promise.all([
+      encryptToken(tokens.access_token),
+      encryptToken(tokens.refresh_token),
+    ]);
+  } catch (error) {
+    xeroError("token_encryption_failed", error, {
+      platformTenantId: stateRow.platform_tenant_id,
+      connectionCount: connections.length,
+    });
+    return redirectToSettings("token_encryption_failed");
+  }
+
+  xeroDebug("tokens_encrypted", {
+    platformTenantId: stateRow.platform_tenant_id,
+    connectionCount: connections.length,
+  });
 
   const accessTokenExpiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
   const grantedScopes = tokens.scope ? tokens.scope.split(/\s+/).filter(Boolean) : [];
@@ -109,9 +170,19 @@ export async function GET(request: NextRequest): Promise<Response> {
     .upsert(rows, { onConflict: "platform_tenant_id,xero_tenant_id" });
 
   if (upsertError) {
-    console.error("[xero.callback] failed to upsert xero_connections", upsertError);
+    xeroError("xero_connections_upsert_failed", upsertError, {
+      platformTenantId: stateRow.platform_tenant_id,
+      connectionCount: rows.length,
+      xeroTenantIds: rows.map((row) => row.xero_tenant_id),
+    });
     return redirectToSettings("persist_failed");
   }
+
+  xeroDebug("callback_completed", {
+    platformTenantId: stateRow.platform_tenant_id,
+    connectionCount: rows.length,
+    xeroTenantIds: rows.map((row) => row.xero_tenant_id),
+  });
 
   const successUrl = new URL("/settings/integrations", baseUrl());
   successUrl.searchParams.set("connected", "1");

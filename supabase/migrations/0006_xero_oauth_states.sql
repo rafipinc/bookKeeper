@@ -30,4 +30,6 @@ create policy "xero_oauth_states_owner_access"
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+grant select, insert, delete on public.xero_oauth_states to authenticated;
+
 commit;

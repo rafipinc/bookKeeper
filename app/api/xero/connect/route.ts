@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
+import { summarizeValue, xeroDebug, xeroError } from "@/lib/xero/debug";
 import { buildAuthorizeUrl, generateOAuthState } from "@/lib/xero/oauth";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,9 @@ export async function GET(): Promise<Response> {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
+    xeroError("connect_user_lookup_failed", userError ?? "No authenticated Supabase user", {
+      hasUser: Boolean(user),
+    });
     return NextResponse.redirect(new URL("/login?next=/settings/integrations", baseUrl()));
   }
 
@@ -29,11 +33,19 @@ export async function GET(): Promise<Response> {
   try {
     platformTenantId = await ensureUserPlatformTenant(supabase, user.id);
   } catch (error) {
-    console.error("[xero.connect] failed to resolve platform tenant", error);
+    xeroError("connect_tenant_resolution_failed", error, {
+      userId: user.id,
+    });
     return redirectToSettings("tenant_resolution_failed");
   }
 
   const state = generateOAuthState();
+  xeroDebug("connect_state_generated", {
+    userId: user.id,
+    platformTenantId,
+    state: summarizeValue(state),
+  });
+
   const { error: insertError } = await supabase.from("xero_oauth_states").insert({
     state,
     user_id: user.id,
@@ -41,11 +53,21 @@ export async function GET(): Promise<Response> {
   });
 
   if (insertError) {
-    console.error("[xero.connect] failed to persist oauth state", insertError);
+    xeroError("connect_state_persist_failed", insertError, {
+      userId: user.id,
+      platformTenantId,
+      state: summarizeValue(state),
+    });
     return redirectToSettings("state_persist_failed");
   }
 
-  return NextResponse.redirect(buildAuthorizeUrl(state));
+  const authorizeUrl = buildAuthorizeUrl(state);
+  xeroDebug("connect_redirecting_to_xero", {
+    userId: user.id,
+    platformTenantId,
+  });
+
+  return NextResponse.redirect(authorizeUrl);
 }
 
 function baseUrl(): string {

@@ -791,6 +791,24 @@ export type Database = {
         };
         Returns: string;
       };
+      xero_decrypt_token: {
+        Args: {
+          cipher: string;
+        };
+        Returns: string;
+      };
+      xero_encrypt_token: {
+        Args: {
+          plain: string;
+        };
+        Returns: string;
+      };
+      xero_lock_connection_refresh: {
+        Args: {
+          connection_id: string;
+        };
+        Returns: undefined;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
