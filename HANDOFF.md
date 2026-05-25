@@ -1,127 +1,106 @@
-# Handoff to Claude Code
+# Handoff
 
-Last updated: 2026-05-22
+Last updated: 2026-05-25
 
-## Where We Are
+## Current State
 
-Phase 1 is complete. Phase 2 Xero integration is active on `develop`.
+Phase 2 Xero work is being shipped as stacked review branches from `develop`.
 
-Localhost Xero OAuth is now working end to end:
-- `/api/xero/connect` redirects to Xero with granular post-March-2026 scopes.
-- `/api/xero/callback` exchanges the code, fetches Xero tenant connections, encrypts tokens through Supabase RPCs, and persists `xero_connections`.
-- Rafi confirmed the local integration completed successfully on `http://localhost:3000`.
+`gh` is not installed locally, so branches are pushed and PRs need to be opened from compare URLs.
 
-The final blocker was not Xero credentials or redirect URI configuration. The shell that launched `pnpm dev` had an inherited stale `SUPABASE_SERVICE_ROLE_KEY` (`keyLength: 41`) overriding `.env.local` (`keyLength: 219`). Restarting with inherited Supabase/Xero env vars cleared made Next load `.env.local` correctly.
+## Branch Stack
 
-## Shipped
+Open PRs in this order:
 
-### Phase 1 — MVP
-- **RAF-11 / BKP-001** — Next.js 15 scaffold, TypeScript strict, Tailwind, shadcn/ui
-- **RAF-12 / BKP-002** — Supabase magic-link auth
-- **RAF-13 / BKP-003** — App shell
-- **RAF-14 / BKP-004** — Core DB schema + RLS
-- **RAF-15 / BKP-005** — First-signin business profile prompt
-- **RAF-16 / BKP-006** — Default category seeding
-- **RAF-17 / BKP-007** — Vercel deployment + environment config
+1. `codex/raf-43-bkp-010a-xero-invoices-publish-error`
+   - Base: `develop`
+   - Scope: adds nullable `xero_invoices.publish_error` and Supabase types.
 
-### Phase 2 — Xero Integration
-- **RAF-18 / BKP-008** — Multi-tenant migration
-- **RAF-19 / BKP-009** — Inngest setup
-- **RAF-20 / BKP-010** — Xero DB schema + RLS
-- **RAF-21 / BKP-011** — Xero OAuth connect + callback routes
-- **RAF-22 / BKP-012** — Token encryption, refresh, disconnect, and reauth-required handling
-- **RAF-30 / BKP-020** — Settings → Integrations UI
-- **RAF-42 / BKP-028** — Xero developer app registered and local env configured
+2. `codex/raf-24-bkp-014-initial-xero-sync-job`
+   - Base: `codex/raf-43-bkp-010a-xero-invoices-publish-error`
+   - Scope: Inngest initial Xero tenant sync for accounts, contacts, tax rates, and bank transactions.
 
-## What Changed In The Latest Push
+3. `codex/raf-33-bkp-023-invoice-composer`
+   - Base: `codex/raf-24-bkp-014-initial-xero-sync-job`
+   - Scope: ACCREC invoice composer, save draft API, publish API, and Xero publish Inngest job.
 
-- Replaced the temporary token envelope with Supabase RPC-backed token encryption/decryption.
-- Added token refresh with advisory lock RPC, in-process single-flight protection, refresh audit logging, and `invalid_grant` reauth handling.
-- Updated disconnect to revoke the Xero connection and clear stored tokens.
-- Added service-role Supabase client handling for server-side token operations.
-- Added dev-safe Xero OAuth debug logs that redact codes/tokens.
-- Added service-role key fingerprint logging in development to catch stale inherited env values without printing secrets.
-- Updated Xero OAuth scopes to granular scopes:
-  - `accounting.banktransactions`
-  - `accounting.invoices`
-  - `accounting.payments`
-  - plus contacts/settings/openid/profile/email/offline_access
-- Added/updated Supabase migrations and generated types for Xero token RPCs.
-- Fixed the login redirect loop so signed-out users see the magic-link form.
+4. `codex/raf-34-bkp-024-bill-capture`
+   - Base: `codex/raf-33-bkp-023-invoice-composer`
+   - Scope: ACCPAY bill capture, document extraction, attachment upload, save draft API, publish API, and Xero publish Inngest job.
 
-## Verification
+## BKP-024 Takeover Point
 
-Already run locally:
-- `pnpm typecheck`
-- `pnpm lint`
-- `pnpm test`
-
-Manual verification:
-- Fresh Xero OAuth connect on localhost completed successfully and persisted connected organisations.
-
-## Local Environment Notes
-
-`.env.local` is configured at the repo root with Supabase and Xero credentials. `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY` can remain blank until BKP-014 sync jobs are implemented.
-
-Current local Xero env:
-- `NEXT_PUBLIC_APP_URL=http://localhost:3000`
-- `XERO_REDIRECT_URI=http://localhost:3000/api/xero/callback`
-- Xero client ID ends in `95465E`.
-
-If local OAuth fails with `token_encryption_failed`, check the dev-server terminal for:
-
-```text
-[supabase.service-role] using service key
-```
-
-Expected local fingerprint is:
-- `keyLength: 219`
-- `keyHash: 3f2c075618bc`
-- `role: service_role`
-- `ref: iaenvnkvwbotdtzxxpyc`
-
-If the app logs `keyLength: 41` or no JWT payload metadata, the shell has a stale inherited `SUPABASE_SERVICE_ROLE_KEY`. Restart with inherited env vars cleared:
+Integration branch:
 
 ```bash
-env -u SUPABASE_SERVICE_ROLE_KEY \
-  -u NEXT_PUBLIC_SUPABASE_URL \
-  -u NEXT_PUBLIC_SUPABASE_ANON_KEY \
-  -u NEXT_PUBLIC_APP_URL \
-  -u NEXT_PUBLIC_SITE_URL \
-  -u XERO_CLIENT_ID \
-  -u XERO_CLIENT_SECRET \
-  -u XERO_REDIRECT_URI \
-  pnpm dev
+git switch codex/raf-34-bkp-024-bill-capture
 ```
 
-## Next Work
+Commits currently on the BKP-024 integration branch:
 
-Start with **RAF-23 / BKP-013**: Xero API client wrapper.
+- `9bac300` `[BKP-024] Implement bill extraction and ACCPAY publish backend`
+- `7939ce4` `[BKP-024] Add bill composer extraction frontend`
+- `fa7ae7b` `[BKP-024] Fix bill composer attachment integration`
 
-Expected scope:
-- `lib/xero/client.ts`
-- per-tenant rate limiting and retry behavior
-- Xero tenant header handling
-- logging rows to `xero_api_calls`
-- usable by BKP-014 initial sync
+Worker branches used to build it:
 
-Then continue to **RAF-24 / BKP-014**: initial Xero sync job.
+- `codex/raf-34-bkp-024-backend` at `9877f75`
+- `codex/raf-34-bkp-024-frontend` at `e5c47d6`
 
-## Per-Card Workflow
+The integration branch includes an extra fix beyond the worker branches:
 
-1. Read the Linear issue. Note the `spec:`, `design:`, `ADR:`, and `Depends on:` lines.
-2. Open the referenced Phase 2 spec in `../agent-workflow/specs/0003-xero-bookkeeper-bridge.md`.
-3. Open relevant ADRs, especially token storage, background jobs, multi-tenancy, and cash-basis accounting.
-4. Implement only the card acceptance criteria.
-5. Open a PR against `develop`. Title format: `[BKP-NNN] short description`.
-6. After opening a PR, switch to `../agent-workflow/` and ask the Reviewer subagent to review the PR.
+- Frontend now reads the save response from `bill`, not `invoice`.
+- Frontend uploads the selected receipt/bill file through `/api/bills/attachments/upload-url`.
+- After upload, the draft is resaved with `attachment_path` and `attachment_status='pending'`.
+- Draft edit page selects and passes existing `attachment_path`.
+
+## Verification Already Run
+
+On `codex/raf-34-bkp-024-bill-capture`:
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+```
+
+All passed. `pnpm build` only emitted the existing Next workspace-root warning caused by multiple lockfiles.
+
+## Still To Do
+
+1. Push `codex/raf-34-bkp-024-bill-capture`.
+2. Open stacked PRs using the branch stack above.
+3. Run reviewer flow from `../agent-workflow/` after PR URLs exist:
+
+```text
+Use the reviewer subagent to review PR <URL>.
+```
+
+4. Optional manual check:
+   - Start `pnpm dev`.
+   - Log in.
+   - Open `/compose/bill`.
+   - Upload a PDF/JPEG/PNG under 10MB.
+   - Confirm extraction prefill, save draft, and publish queue behavior.
+
+## Useful Compare URLs
+
+- BKP-010a: `https://github.com/rafipinc/bookKeeper/compare/develop...codex/raf-43-bkp-010a-xero-invoices-publish-error?expand=1`
+- BKP-014: `https://github.com/rafipinc/bookKeeper/compare/codex/raf-43-bkp-010a-xero-invoices-publish-error...codex/raf-24-bkp-014-initial-xero-sync-job?expand=1`
+- BKP-023: `https://github.com/rafipinc/bookKeeper/compare/codex/raf-24-bkp-014-initial-xero-sync-job...codex/raf-33-bkp-023-invoice-composer?expand=1`
+- BKP-024: `https://github.com/rafipinc/bookKeeper/compare/codex/raf-33-bkp-023-invoice-composer...codex/raf-34-bkp-024-bill-capture?expand=1`
+
+## Local Notes
+
+- Dev server may already be running from an earlier session: `pnpm dev` on port 3000.
+- OpenAI extraction uses `OPENAI_API_KEY` and `OPENAI_BILL_EXTRACTION_MODEL`, defaulting to `gpt-5`.
+- Bill attachments use `BILL_ATTACHMENTS_BUCKET`, defaulting to `xero-bill-documents`.
 
 ## Hard Constraints
 
-- **Stack:** Next.js 15 App Router, TypeScript strict, Tailwind, shadcn/ui, Supabase, Vercel, pnpm.
-- **Money:** `amount_cents bigint` only. Never floats. Never `numeric`.
-- **RLS:** every user-data table has Postgres RLS. Never enforce access only in app code.
-- **Cash basis:** one `date` column per transaction. No obligation/settlement split.
-- **Mobile-first:** follow the design briefs.
-- **Spec non-goals:** no invoicing, payroll, AR/AP, tax, multi-currency UI, or multi-business UI unless a later approved spec changes scope.
-- **One card at a time:** implement only the active card's acceptance criteria.
+- Money stays in integer cents.
+- RLS belongs in Postgres.
+- Preserve cash-basis accounting rules.
+- Keep work scoped to the active Linear card.
+- PR title format: `[BKP-NNN] short description`.
