@@ -483,6 +483,7 @@ export type Database = {
           currency: string | null;
           attachment_path: string | null;
           attachment_status: string | null;
+          publish_error: string | null;
           published_to_xero_at: string | null;
           created_by: string | null;
           created_at: string;
@@ -506,6 +507,7 @@ export type Database = {
           currency?: string | null;
           attachment_path?: string | null;
           attachment_status?: string | null;
+          publish_error?: string | null;
           published_to_xero_at?: string | null;
           created_by?: string | null;
           created_at?: string;
@@ -529,6 +531,7 @@ export type Database = {
           currency?: string | null;
           attachment_path?: string | null;
           attachment_status?: string | null;
+          publish_error?: string | null;
           published_to_xero_at?: string | null;
           created_by?: string | null;
           created_at?: string;
