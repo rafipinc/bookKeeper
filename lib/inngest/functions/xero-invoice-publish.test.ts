@@ -66,8 +66,8 @@ describe("xeroInvoicePublish internals", () => {
       },
       connection: { id: "connection-1", xero_tenant_id: "xero-tenant-1" },
       contact: { xero_contact_id: "xero-contact-1" },
-      accountsById: new Map([["account-1", { id: "account-1", code: "200" }]]),
-      taxRatesById: new Map([["tax-1", { id: "tax-1", xero_tax_type: "OUTPUT2" }]]),
+      accounts: [{ id: "account-1", code: "200" }],
+      taxRates: [{ id: "tax-1", xero_tax_type: "OUTPUT2" }],
     });
 
     expect(payload).toEqual({

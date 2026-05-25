@@ -64,18 +64,27 @@ function normalizeLineItem(value: unknown, index: number): DraftInvoiceLineItem 
     throw new Error(`lineItems[${index}].quantity must be a positive number.`);
   }
 
-  const unitAmountCents = parseMoneyToCents(item.unitAmount, `lineItems[${index}].unitAmount`);
+  const unitAmountCents = parseLineItemAmountCents(item, index);
 
   return {
     description,
     quantity,
     unit_amount_cents: unitAmountCents,
-    account_code: asString(item.accountCode) ?? null,
-    account_id: asString(item.accountId) ?? null,
-    tax_type: asString(item.taxType) ?? null,
-    tax_rate_id: asString(item.taxRateId) ?? null,
-    tax_rate_percent: asNullableNumber(item.taxRatePercent),
+    account_code: asString(item.accountCode) ?? asString(item.account_code) ?? null,
+    account_id: asString(item.accountId) ?? asString(item.account_id) ?? null,
+    tax_type: asString(item.taxType) ?? asString(item.tax_type) ?? null,
+    tax_rate_id: asString(item.taxRateId) ?? asString(item.tax_rate_id) ?? null,
+    tax_rate_percent: asNullableNumber(item.taxRatePercent) ?? asNullableNumber(item.tax_rate_percent),
   };
+}
+
+function parseLineItemAmountCents(item: Record<string, unknown>, index: number): number {
+  const centsValue = item.unitAmountCents ?? item.unit_amount_cents;
+  if (typeof centsValue === "number" && Number.isFinite(centsValue)) {
+    return roundToCents(centsValue);
+  }
+
+  return parseMoneyToCents(item.unitAmount, `lineItems[${index}].unitAmount`);
 }
 
 function parseMoneyToCents(value: unknown, fieldName: string): number {

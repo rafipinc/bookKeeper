@@ -45,14 +45,14 @@ export default async function ComposeInvoiceDraftPage({ params }: { params: Prom
   const [{ data: contacts }, { data: accounts }, { data: taxRates }] = await Promise.all([
     supabase
       .from("xero_contacts")
-      .select("id,name,email")
+      .select("id,xero_tenant_id,name,email")
       .eq("platform_tenant_id", platformTenantId)
       .in("xero_tenant_id", xeroTenantIds)
       .eq("is_customer", true)
       .order("name", { ascending: true }),
     supabase
       .from("xero_accounts")
-      .select("id,code,name")
+      .select("id,xero_tenant_id,code,name")
       .eq("platform_tenant_id", platformTenantId)
       .in("xero_tenant_id", xeroTenantIds)
       .eq("type", "REVENUE")
@@ -60,7 +60,7 @@ export default async function ComposeInvoiceDraftPage({ params }: { params: Prom
       .order("name", { ascending: true }),
     supabase
       .from("xero_tax_rates")
-      .select("xero_tax_type,name,rate")
+      .select("xero_tenant_id,xero_tax_type,name,rate")
       .eq("platform_tenant_id", platformTenantId)
       .in("xero_tenant_id", xeroTenantIds)
       .order("name", { ascending: true }),
@@ -82,14 +82,24 @@ export default async function ComposeInvoiceDraftPage({ params }: { params: Prom
 
   return (
     <InvoiceComposer
-      accounts={accounts.map((account) => ({ id: account.id, code: account.code, name: account.name }))}
+      accounts={accounts.map((account) => ({
+        id: account.id,
+        xeroTenantId: account.xero_tenant_id,
+        code: account.code,
+        name: account.name,
+      }))}
       connections={connections.map((connection) => ({
         id: connection.id,
         xeroTenantId: connection.xero_tenant_id,
         xeroTenantName: connection.xero_tenant_name,
         status: connection.status,
       }))}
-      contacts={contacts.map((contact) => ({ id: contact.id, name: contact.name, email: contact.email }))}
+      contacts={contacts.map((contact) => ({
+        id: contact.id,
+        xeroTenantId: contact.xero_tenant_id,
+        name: contact.name,
+        email: contact.email,
+      }))}
       initialDraft={{
         id: draft.id,
         xeroTenantId: draft.xero_tenant_id,
@@ -101,7 +111,12 @@ export default async function ComposeInvoiceDraftPage({ params }: { params: Prom
         publishError: draft.publish_error,
         lineItemsJson: draft.line_items_json,
       }}
-      taxRates={taxRates.map((rate) => ({ xeroTaxType: rate.xero_tax_type, name: rate.name, rate: rate.rate }))}
+      taxRates={taxRates.map((rate) => ({
+        xeroTenantId: rate.xero_tenant_id,
+        xeroTaxType: rate.xero_tax_type,
+        name: rate.name,
+        rate: rate.rate,
+      }))}
     />
   );
 }

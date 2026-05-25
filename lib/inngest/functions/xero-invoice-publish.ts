@@ -14,8 +14,8 @@ type PublishContext = {
   invoice: XeroInvoiceRow;
   connection: Pick<XeroConnectionRow, "id" | "xero_tenant_id">;
   contact: Pick<XeroContactRow, "xero_contact_id"> | null;
-  accountsById: Map<string, Pick<XeroAccountRow, "id" | "code">>;
-  taxRatesById: Map<string, Pick<XeroTaxRateRow, "id" | "xero_tax_type">>;
+  accounts: Array<Pick<XeroAccountRow, "id" | "code">>;
+  taxRates: Array<Pick<XeroTaxRateRow, "id" | "xero_tax_type">>;
 };
 
 export const xeroInvoicePublish = inngest.createFunction(
@@ -37,10 +37,10 @@ export const xeroInvoicePublish = inngest.createFunction(
   },
   async ({ event, step }) => {
     const invoiceId = parseInvoiceId(event.data);
-    const context = await loadPublishContext(invoiceId);
-    const payload = buildXeroPayload(context);
 
     try {
+      const context = await step.run("load invoice publish context", async () => loadPublishContext(invoiceId));
+      const payload = buildXeroPayload(context);
       const xeroClient = new XeroClient(context.connection.id);
       const response = await step.run("publish draft invoice to xero", async () =>
         xeroClient.createInvoice(payload),
@@ -55,9 +55,9 @@ export const xeroInvoicePublish = inngest.createFunction(
     } catch (error) {
       if (error instanceof NonRetryableXeroError) {
         await step.run("persist non-retryable publish failure", async () =>
-          markInvoicePublishFailed(context.invoice.id, extractErrorMessage(error)),
+          markInvoicePublishFailed(invoiceId, extractErrorMessage(error)),
         );
-        throw error;
+        return { invoiceId, publishFailed: true };
       }
 
       if (error instanceof RetryableXeroError) {
@@ -140,8 +140,8 @@ async function loadPublishContext(invoiceId: string): Promise<PublishContext> {
     invoice,
     connection,
     contact: contactsResult.data,
-    accountsById: new Map((accountsResult.data ?? []).map((row) => [row.id, row])),
-    taxRatesById: new Map((taxRatesResult.data ?? []).map((row) => [row.id, row])),
+    accounts: accountsResult.data ?? [],
+    taxRates: taxRatesResult.data ?? [],
   };
 }
 
@@ -151,8 +151,10 @@ function buildXeroPayload(context: PublishContext): Record<string, unknown> {
     throw new NonRetryableXeroError("Invoice has no line items.", 422, "");
   }
 
+  const accountsById = new Map(context.accounts.map((account) => [account.id, account]));
+  const taxRatesById = new Map(context.taxRates.map((taxRate) => [taxRate.id, taxRate]));
   const lineItems = lineItemsJson.map((lineItem, index) =>
-    mapInvoiceLineItem(lineItem, index, context.accountsById, context.taxRatesById),
+    mapInvoiceLineItem(lineItem, index, accountsById, taxRatesById),
   );
 
   const invoicePayload: Record<string, unknown> = {

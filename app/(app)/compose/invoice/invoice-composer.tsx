@@ -13,17 +13,20 @@ type XeroConnectionOption = {
 
 type XeroContactOption = {
   id: string;
+  xeroTenantId: string;
   name: string;
   email: string | null;
 };
 
 type XeroAccountOption = {
   id: string;
+  xeroTenantId: string;
   code: string | null;
   name: string;
 };
 
 type XeroTaxRateOption = {
+  xeroTenantId: string;
   xeroTaxType: string;
   name: string;
   rate: number | null;
@@ -108,13 +111,25 @@ function parseLineItems(value: unknown, fallbackTaxType: string) {
       description: typeof candidate.description === "string" ? candidate.description : "",
       quantity: String(typeof candidate.quantity === "number" || typeof candidate.quantity === "string" ? candidate.quantity : "1"),
       unitAmount:
-        typeof candidate.unitAmountCents === "number"
-          ? (candidate.unitAmountCents / 100).toFixed(2)
+        typeof candidate.unit_amount_cents === "number"
+          ? (candidate.unit_amount_cents / 100).toFixed(2)
+          : typeof candidate.unitAmountCents === "number"
+            ? (candidate.unitAmountCents / 100).toFixed(2)
           : typeof candidate.unitAmount === "string"
             ? candidate.unitAmount
             : "",
-      accountId: typeof candidate.accountId === "string" ? candidate.accountId : "",
-      taxType: typeof candidate.taxType === "string" ? candidate.taxType : fallbackTaxType,
+      accountId:
+        typeof candidate.account_id === "string"
+          ? candidate.account_id
+          : typeof candidate.accountId === "string"
+            ? candidate.accountId
+            : "",
+      taxType:
+        typeof candidate.tax_type === "string"
+          ? candidate.tax_type
+          : typeof candidate.taxType === "string"
+            ? candidate.taxType
+            : fallbackTaxType,
     });
   }
 
@@ -162,11 +177,19 @@ export function InvoiceComposer({
   const [dueDate, setDueDate] = useState(initialDraft?.dueDate ?? plusDaysIso(14));
   const [reference, setReference] = useState(initialDraft?.reference ?? "");
   const [invoiceNumber, setInvoiceNumber] = useState(initialDraft?.invoiceNumber ?? "");
-  const defaultTaxType = taxRates[0]?.xeroTaxType ?? "";
-  const [lineItems, setLineItems] = useState<LineItem[]>(parseLineItems(initialDraft?.lineItemsJson, defaultTaxType));
+  const initialDefaultTaxType =
+    taxRates.find((rate) => rate.xeroTenantId === defaultConnection?.xeroTenantId)?.xeroTaxType ??
+    taxRates[0]?.xeroTaxType ??
+    "";
+  const [lineItems, setLineItems] = useState<LineItem[]>(parseLineItems(initialDraft?.lineItemsJson, initialDefaultTaxType));
   const [draftId, setDraftId] = useState(initialDraft?.id ?? "");
   const [localContacts, setLocalContacts] = useState<XeroContactOption[]>(contacts);
   const selectedConnection = connections.find((connection) => connection.id === selectedConnectionId) ?? null;
+  const selectedXeroTenantId = selectedConnection?.xeroTenantId ?? "";
+  const visibleContacts = localContacts.filter((contact) => contact.xeroTenantId === selectedXeroTenantId);
+  const visibleAccounts = accounts.filter((account) => account.xeroTenantId === selectedXeroTenantId);
+  const visibleTaxRates = taxRates.filter((rate) => rate.xeroTenantId === selectedXeroTenantId);
+  const defaultTaxType = visibleTaxRates[0]?.xeroTaxType ?? "";
 
   const lineTotals = useMemo(() => {
     let subtotalCents = 0;
@@ -180,14 +203,24 @@ export function InvoiceComposer({
       const lineSubtotal = Math.round(quantity * unitCents);
       subtotalCents += lineSubtotal;
 
-      const taxRate = taxRates.find((item) => item.xeroTaxType === row.taxType)?.rate ?? 0;
+      const taxRate = visibleTaxRates.find((item) => item.xeroTaxType === row.taxType)?.rate ?? 0;
       taxCents += Math.round(lineSubtotal * ((taxRate ?? 0) / 100));
     }
     return { subtotalCents, taxCents, totalCents: subtotalCents + taxCents };
-  }, [lineItems, taxRates]);
+  }, [lineItems, visibleTaxRates]);
 
   const canSave = Boolean(selectedConnectionId && invoiceDate && dueDate && lineItems.length > 0);
-  const canPublish = canSave && lineItems.some((row) => row.description.trim() && parseMoneyToCents(row.unitAmount) > 0);
+  const canPublish =
+    canSave &&
+    Boolean(selectedContactId) &&
+    lineItems.every(
+      (row) =>
+        row.description.trim() &&
+        row.accountId &&
+        row.taxType &&
+        Number.parseFloat(row.quantity) > 0 &&
+        parseMoneyToCents(row.unitAmount) > 0,
+    );
 
   async function saveDraft() {
     if (!canSave) {
@@ -205,7 +238,7 @@ export function InvoiceComposer({
       lineItems: lineItems.map((row) => ({
         description: row.description.trim(),
         quantity: Number.parseFloat(row.quantity) || 0,
-        unitAmountCents: parseMoneyToCents(row.unitAmount),
+        unitAmount: row.unitAmount,
         accountId: row.accountId || null,
         taxType: row.taxType || null,
       })),
@@ -248,6 +281,21 @@ export function InvoiceComposer({
     ]);
   }
 
+  function selectConnection(connectionId: string) {
+    const nextConnection = connections.find((connection) => connection.id === connectionId) ?? null;
+    const nextDefaultTaxType = taxRates.find((rate) => rate.xeroTenantId === nextConnection?.xeroTenantId)?.xeroTaxType ?? "";
+
+    setSelectedConnectionId(connectionId);
+    setSelectedContactId("");
+    setLineItems((current) =>
+      current.map((row) => ({
+        ...row,
+        accountId: "",
+        taxType: nextDefaultTaxType,
+      })),
+    );
+  }
+
   function removeLineItem(id: string) {
     setLineItems((current) => (current.length > 1 ? current.filter((row) => row.id !== id) : current));
   }
@@ -278,9 +326,15 @@ export function InvoiceComposer({
         const createdId = data.contact?.id;
         if (createdId) {
           setLocalContacts((current) =>
-            [{ id: createdId, name: data.contact?.name ?? newContactName.trim(), email: data.contact?.email ?? null }, ...current].sort((a, b) =>
-              a.name.localeCompare(b.name),
-            ),
+            [
+              {
+                id: createdId,
+                xeroTenantId: selectedXeroTenantId,
+                name: data.contact?.name ?? newContactName.trim(),
+                email: data.contact?.email ?? null,
+              },
+              ...current,
+            ].sort((a, b) => a.name.localeCompare(b.name)),
           );
           setSelectedContactId(createdId);
         }
@@ -340,7 +394,7 @@ export function InvoiceComposer({
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-sm">
                 <span className="text-[var(--text-secondary)]">Xero connection</span>
-                <select className="bkp-input h-10 w-full px-3 text-sm" onChange={(event) => setSelectedConnectionId(event.target.value)} value={selectedConnectionId}>
+                <select className="bkp-input h-10 w-full px-3 text-sm" onChange={(event) => selectConnection(event.target.value)} value={selectedConnectionId}>
                   {connections.map((connection) => (
                     <option key={connection.id} value={connection.id}>
                       {connection.xeroTenantName ?? connection.xeroTenantId}
@@ -352,7 +406,7 @@ export function InvoiceComposer({
                 <span className="text-[var(--text-secondary)]">Contact</span>
                 <select className="bkp-input h-10 w-full px-3 text-sm" onChange={(event) => setSelectedContactId(event.target.value)} value={selectedContactId}>
                   <option value="">Select contact</option>
-                  {localContacts.map((contact) => (
+                  {visibleContacts.map((contact) => (
                     <option key={contact.id} value={contact.id}>
                       {contact.name}
                     </option>
@@ -418,7 +472,7 @@ export function InvoiceComposer({
                     <span className="text-[var(--text-secondary)]">Account</span>
                     <select className="bkp-input h-10 w-full px-3 text-sm" onChange={(event) => updateLineItem(row.id, "accountId", event.target.value)} value={row.accountId}>
                       <option value="">Select account</option>
-                      {accounts.map((account) => (
+                      {visibleAccounts.map((account) => (
                         <option key={account.id} value={account.id}>
                           {account.code ? `${account.code} · ${account.name}` : account.name}
                         </option>
@@ -428,8 +482,8 @@ export function InvoiceComposer({
                   <label className="space-y-1 text-sm">
                     <span className="text-[var(--text-secondary)]">Tax rate</span>
                     <select className="bkp-input h-10 w-full px-3 text-sm" onChange={(event) => updateLineItem(row.id, "taxType", event.target.value)} value={row.taxType}>
-                      {taxRates.map((rate) => (
-                        <option key={rate.xeroTaxType} value={rate.xeroTaxType}>
+                      {visibleTaxRates.map((rate) => (
+                        <option key={`${rate.xeroTenantId}:${rate.xeroTaxType}`} value={rate.xeroTaxType}>
                           {rate.name}
                         </option>
                       ))}
@@ -539,7 +593,7 @@ export function InvoiceComposer({
 
               <div>
                 <p className="text-xs uppercase text-[var(--text-muted)]">Contact</p>
-                <p>{localContacts.find((contact) => contact.id === selectedContactId)?.name ?? "Select a contact"}</p>
+                <p>{visibleContacts.find((contact) => contact.id === selectedContactId)?.name ?? "Select a contact"}</p>
               </div>
 
               <div className="rounded-[var(--radius-input)] border border-[var(--border)]">

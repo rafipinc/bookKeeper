@@ -38,4 +38,30 @@ describe("invoice payload helpers", () => {
   it("converts cents to Xero decimal unit amount", () => {
     expect(centsToXeroUnitAmount(12345)).toBe(123.45);
   });
+
+  it("accepts saved snake_case line item snapshots", () => {
+    expect(
+      normalizeLineItems([
+        {
+          description: "Implementation",
+          quantity: 1.5,
+          unit_amount_cents: 20000,
+          account_id: "account-1",
+          tax_type: "OUTPUT",
+          tax_rate_percent: 10,
+        },
+      ]),
+    ).toEqual([
+      {
+        description: "Implementation",
+        quantity: 1.5,
+        unit_amount_cents: 20000,
+        account_code: null,
+        account_id: "account-1",
+        tax_type: "OUTPUT",
+        tax_rate_id: null,
+        tax_rate_percent: 10,
+      },
+    ]);
+  });
 });
