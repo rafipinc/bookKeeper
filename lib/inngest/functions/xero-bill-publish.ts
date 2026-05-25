@@ -48,7 +48,12 @@ export const xeroBillPublish = inngest.createFunction(
       const published = extractPublishedInvoice(response);
 
       await step.run("persist publish success", async () =>
-        persistPublishSuccess(context.bill.id, published.InvoiceID, published.InvoiceNumber),
+        persistPublishSuccess(
+          context.bill.id,
+          published.InvoiceID,
+          published.InvoiceNumber,
+          Boolean(context.bill.attachment_path),
+        ),
       );
 
       if (context.bill.attachment_path) {
@@ -262,7 +267,12 @@ function extractPublishedInvoice(response: unknown): { InvoiceID: string; Invoic
   };
 }
 
-async function persistPublishSuccess(invoiceId: string, xeroInvoiceId: string, xeroInvoiceNumber: string | null) {
+async function persistPublishSuccess(
+  invoiceId: string,
+  xeroInvoiceId: string,
+  xeroInvoiceNumber: string | null,
+  hasAttachment: boolean,
+) {
   const { error } = await createServiceRoleClient()
     .from("xero_invoices")
     .update({
@@ -271,7 +281,7 @@ async function persistPublishSuccess(invoiceId: string, xeroInvoiceId: string, x
       xero_invoice_number: xeroInvoiceNumber,
       publish_error: null,
       published_to_xero_at: new Date().toISOString(),
-      attachment_status: "pending",
+      attachment_status: hasAttachment ? "pending" : null,
     })
     .eq("id", invoiceId);
 
@@ -358,4 +368,3 @@ export const xeroBillPublishInternals = {
   extractPublishedInvoice,
   extractFilename,
 };
-

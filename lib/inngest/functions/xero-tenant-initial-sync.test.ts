@@ -28,12 +28,13 @@ const connection = {
 };
 
 describe("xeroTenantInitialSync internals", () => {
-  it("maps bank account rows and parses Xero date formats", () => {
+  it("maps chart of accounts rows and parses Xero date formats", () => {
     const mapped = xeroTenantInitialSyncInternals.mapAccount(
       {
         AccountID: "acc-1",
-        Name: "Main Bank",
-        Type: "BANK",
+        Name: "Consulting Revenue",
+        Type: "REVENUE",
+        Class: "REVENUE",
         UpdatedDateUTC: "/Date(1716595200000+0000)/",
       },
       connection,
@@ -43,8 +44,9 @@ describe("xeroTenantInitialSync internals", () => {
       platform_tenant_id: connection.platform_tenant_id,
       xero_tenant_id: connection.xero_tenant_id,
       xero_account_id: "acc-1",
-      name: "Main Bank",
-      type: "BANK",
+      name: "Consulting Revenue",
+      type: "REVENUE",
+      class: "REVENUE",
     });
     expect(mapped?.updated_xero_at).toBe("2024-05-25T00:00:00.000Z");
   });

@@ -29,6 +29,18 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "billId and filename are required." }, { status: 400 });
   }
 
+  const { data: bill, error: billError } = await supabase
+    .from("xero_invoices")
+    .select("id")
+    .eq("id", billId)
+    .eq("platform_tenant_id", platformTenantId)
+    .eq("type", "ACCPAY")
+    .maybeSingle();
+
+  if (billError || !bill) {
+    return NextResponse.json({ error: "Bill not found." }, { status: 404 });
+  }
+
   const attachmentPath = `tenant/${platformTenantId}/bills/${billId}/${filename}`;
   const { data, error } = await supabase.storage
     .from(BILL_ATTACHMENTS_BUCKET)
@@ -61,4 +73,3 @@ function sanitizeFilename(value: string | null): string | null {
   const normalized = value.replace(/[^\w.\-]/g, "_");
   return normalized.length > 0 ? normalized : null;
 }
-

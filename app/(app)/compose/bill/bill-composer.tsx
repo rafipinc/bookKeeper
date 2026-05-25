@@ -113,7 +113,7 @@ function parseMoneyToCents(value: string) {
 
 function readString(source: Record<string, unknown>, ...keys: string[]) {
   for (const key of keys) {
-    const value = source[key];
+    const value = readFieldValue(source[key]);
     if (typeof value === "string" && value.trim().length) {
       return value.trim();
     }
@@ -123,7 +123,7 @@ function readString(source: Record<string, unknown>, ...keys: string[]) {
 
 function readNumber(source: Record<string, unknown>, ...keys: string[]) {
   for (const key of keys) {
-    const value = source[key];
+    const value = readFieldValue(source[key]);
     if (typeof value === "number" && Number.isFinite(value)) {
       return value;
     }
@@ -135,6 +135,13 @@ function readNumber(source: Record<string, unknown>, ...keys: string[]) {
     }
   }
   return null;
+}
+
+function readFieldValue(value: unknown) {
+  if (value && typeof value === "object" && !Array.isArray(value) && "value" in value) {
+    return (value as Record<string, unknown>).value;
+  }
+  return value;
 }
 
 function readConfidence(source: Record<string, unknown>, key: string) {
@@ -304,13 +311,13 @@ export function BillComposer({
         parseMoneyToCents(row.unitAmount) > 0,
     );
 
-  async function saveDraft(options: { attachmentPathOverride?: string } = {}) {
+  async function saveDraft(options: { attachmentPathOverride?: string; draftIdOverride?: string } = {}) {
     if (!canSave) {
       throw new Error("Add bill basics before saving.");
     }
     const payloadAttachmentPath = (options.attachmentPathOverride ?? attachmentPath) || null;
     const payload = {
-      id: draftId || undefined,
+      id: (options.draftIdOverride ?? draftId) || undefined,
       xeroConnectionId: selectedConnectionId,
       contactId: selectedContactId || null,
       date: billDate,
@@ -387,7 +394,7 @@ export function BillComposer({
     }
     const uploadedPath = await ensureAttachmentUploaded(savedDraftId);
     if (uploadedPath && uploadedPath !== attachmentPath) {
-      await saveDraft({ attachmentPathOverride: uploadedPath });
+      await saveDraft({ attachmentPathOverride: uploadedPath, draftIdOverride: savedDraftId });
     }
     return savedDraftId;
   }
@@ -406,11 +413,20 @@ export function BillComposer({
   }
 
   function applyExtraction(extraction: Record<string, unknown>) {
-    const supplierName = readString(extraction, "supplier", "vendor", "supplierName", "vendorName");
-    const extractedDate = readString(extraction, "date", "billDate", "invoiceDate");
-    const extractedDueDate = readString(extraction, "dueDate", "paymentDueDate");
-    const extractedTotal = readNumber(extraction, "total", "totalAmount", "amountTotal");
-    const extractedItems = Array.isArray(extraction.lineItems) ? extraction.lineItems : Array.isArray(extraction.items) ? extraction.items : [];
+    const supplierName = readString(extraction, "supplier", "vendor", "supplierName", "vendorName", "supplier_name");
+    const extractedDate = readString(extraction, "date", "billDate", "invoiceDate", "invoice_date");
+    const extractedDueDate = readString(extraction, "dueDate", "paymentDueDate", "due_date");
+    const extractedTotalCents = readNumber(extraction, "total_amount_cents");
+    const extractedTotal = extractedTotalCents !== null
+      ? extractedTotalCents / 100
+      : readNumber(extraction, "total", "totalAmount", "amountTotal");
+    const extractedItems = Array.isArray(extraction.lineItems)
+      ? extraction.lineItems
+      : Array.isArray(extraction.line_items)
+        ? extraction.line_items
+        : Array.isArray(extraction.items)
+          ? extraction.items
+          : [];
 
     if (supplierName) {
       const normalized = supplierName.toLowerCase();
@@ -436,8 +452,11 @@ export function BillComposer({
         const item = raw as Record<string, unknown>;
         const description = readString(item, "description", "name");
         const quantityValue = readNumber(item, "quantity", "qty");
-        const unitAmountValue = readNumber(item, "unitAmount", "unitPrice", "amount");
-        const accountHint = readString(item, "suggestedAccount", "accountCode", "accountName", "category");
+        const unitAmountCents = readNumber(item, "unit_amount_cents", "unitAmountCents");
+        const unitAmountValue = unitAmountCents !== null
+          ? unitAmountCents / 100
+          : readNumber(item, "unitAmount", "unitPrice", "amount");
+        const accountHint = readString(item, "suggestedAccount", "accountCode", "account_code", "accountName", "category");
         const taxHint = readString(item, "taxType", "taxRate", "suggestedTaxType");
         const matchedAccount = accountHint
           ? visibleAccounts.find((account) => account.code?.toLowerCase() === accountHint.toLowerCase())
@@ -484,10 +503,10 @@ export function BillComposer({
     }
 
     setReviewFields({
-      contact: (readConfidence(extraction, "supplier") ?? readConfidence(extraction, "vendor") ?? 1) < LOW_CONFIDENCE_THRESHOLD,
-      date: (readConfidence(extraction, "date") ?? 1) < LOW_CONFIDENCE_THRESHOLD,
-      dueDate: (readConfidence(extraction, "dueDate") ?? 1) < LOW_CONFIDENCE_THRESHOLD,
-      total: (readConfidence(extraction, "total") ?? 1) < LOW_CONFIDENCE_THRESHOLD,
+      contact: (readConfidence(extraction, "supplier") ?? readConfidence(extraction, "vendor") ?? readConfidence(extraction, "supplier_name") ?? 1) < LOW_CONFIDENCE_THRESHOLD,
+      date: (readConfidence(extraction, "date") ?? readConfidence(extraction, "invoice_date") ?? 1) < LOW_CONFIDENCE_THRESHOLD,
+      dueDate: (readConfidence(extraction, "dueDate") ?? readConfidence(extraction, "due_date") ?? 1) < LOW_CONFIDENCE_THRESHOLD,
+      total: (readConfidence(extraction, "total") ?? readConfidence(extraction, "total_amount_cents") ?? 1) < LOW_CONFIDENCE_THRESHOLD,
     });
   }
 

@@ -94,7 +94,7 @@ async function loadConnection(payload: unknown): Promise<SyncConnection> {
 }
 
 async function syncAccounts(client: XeroClient, connection: SyncConnection) {
-  const response = await client.listAccounts({ where: 'Type=="BANK"' }) as XeroListAccountsResponse;
+  const response = await client.listAccounts() as XeroListAccountsResponse;
   const accounts = asArray(response.Accounts);
   if (!accounts.length) {
     return;

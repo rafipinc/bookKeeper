@@ -40,6 +40,10 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "xeroConnectionId is required." }, { status: 400 });
   }
 
+  if (attachmentPath && !isAllowedAttachmentPath(attachmentPath, platformTenantId, id)) {
+    return NextResponse.json({ error: "Invalid attachment path for this bill." }, { status: 400 });
+  }
+
   const lineItemsInput = body.lineItems;
   let normalizedLineItems;
   try {
@@ -173,3 +177,13 @@ function asDateString(value: unknown): string | null {
   return /^\d{4}-\d{2}-\d{2}$/.test(dateValue) ? dateValue : null;
 }
 
+function isAllowedAttachmentPath(
+  attachmentPath: string,
+  platformTenantId: string,
+  billId: string | null,
+): boolean {
+  if (!billId) {
+    return false;
+  }
+  return attachmentPath.startsWith(`tenant/${platformTenantId}/bills/${billId}/`);
+}
