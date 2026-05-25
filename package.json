@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:inngest": "npx inngest-cli@latest dev",
+    "dev": "env -u SUPABASE_SERVICE_ROLE_KEY -u NEXT_PUBLIC_SUPABASE_URL -u NEXT_PUBLIC_SUPABASE_ANON_KEY -u NEXT_PUBLIC_APP_URL -u NEXT_PUBLIC_SITE_URL -u XERO_CLIENT_ID -u XERO_CLIENT_SECRET -u XERO_REDIRECT_URI next dev",
+    "dev:inngest": "npx inngest-cli@latest dev -u http://localhost:3000/api/inngest",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

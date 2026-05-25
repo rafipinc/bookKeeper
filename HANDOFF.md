@@ -62,6 +62,8 @@ pnpm dev
 pnpm dev:inngest
 ```
 
+- `pnpm dev:inngest` explicitly registers `http://localhost:3000/api/inngest`; restart it if jobs queue but never run.
+- `pnpm dev` clears known stale inherited Supabase/Xero env vars before starting Next, so `.env.local` is used.
 - In local development, the Inngest client defaults to dev mode even if `INNGEST_EVENT_KEY` is present. Set `INNGEST_DEV=false` only when you intentionally want local code to send events to Inngest Cloud.
 - OpenAI extraction uses `OPENAI_API_KEY` and `OPENAI_BILL_EXTRACTION_MODEL`, defaulting to `gpt-5`.
 - Bill attachments use `BILL_ATTACHMENTS_BUCKET`, defaulting to `xero-bill-documents`.

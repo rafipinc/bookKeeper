@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2, MoreVertical, RefreshCw, Trash2, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { disconnectXeroConnection, syncXeroConnection } from "@/app/actions/xero";
@@ -86,6 +87,7 @@ function Toast({ toast }: { toast: { kind: ToastKind; message: string } }) {
 }
 
 function ConnectionActions({ connection, onToast }: { connection: XeroConnection; onToast: (toast: { kind: ToastKind; message: string }) => void }) {
+  const router = useRouter();
   const [syncPending, startSyncTransition] = useTransition();
   const [disconnectPending, startDisconnectTransition] = useTransition();
   const [syncDisabledUntil, setSyncDisabledUntil] = useState<number>(0);
@@ -100,6 +102,8 @@ function ConnectionActions({ connection, onToast }: { connection: XeroConnection
       try {
         await syncXeroConnection(connection.id);
         onToast({ kind: "success", message: `Sync queued for ${orgName}.` });
+        window.setTimeout(() => router.refresh(), 3000);
+        window.setTimeout(() => router.refresh(), 10000);
       } catch (error) {
         setSyncDisabledUntil(0);
         onToast({ kind: "error", message: error instanceof Error ? error.message : "Could not queue the sync." });
@@ -113,6 +117,7 @@ function ConnectionActions({ connection, onToast }: { connection: XeroConnection
         await disconnectXeroConnection(connection.id);
         setConfirmOpen(false);
         onToast({ kind: "success", message: `${orgName} disconnected.` });
+        router.refresh();
       } catch (error) {
         onToast({ kind: "error", message: error instanceof Error ? error.message : "Could not disconnect the organisation." });
       }

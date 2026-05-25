@@ -59,7 +59,7 @@ export const xeroTenantInitialSync = inngest.createFunction(
     const newestSeenDate = await step.run("sync bank transactions", async () =>
       syncBankTransactions(xeroClient, connection),
     );
-    await step.run("update last_synced_at", async () => updateLastSyncedAt(connection.id, newestSeenDate));
+    await step.run("update last_synced_at", async () => updateLastSyncedAt(connection.id));
 
     return {
       connectionId: connection.id,
@@ -229,10 +229,10 @@ async function loadBankTransactionReferenceMaps(
   };
 }
 
-async function updateLastSyncedAt(connectionId: string, newestSeenDate: string | null) {
+async function updateLastSyncedAt(connectionId: string) {
   const supabase = createServiceRoleClient();
   const updatePayload: Database["public"]["Tables"]["xero_connections"]["Update"] = {
-    last_synced_at: newestSeenDate ?? new Date().toISOString(),
+    last_synced_at: new Date().toISOString(),
   };
 
   const { error } = await supabase.from("xero_connections").update(updatePayload).eq("id", connectionId);
