@@ -101,6 +101,7 @@ export async function POST(request: Request): Promise<Response> {
     : await createDraftInvoice(supabase, payloadBase);
 
   if (invoiceResult.error || !invoiceResult.data) {
+    console.error("[invoices.save-draft] failed to persist draft", invoiceResult.error);
     return NextResponse.json({ error: "Could not save invoice draft." }, { status: 500 });
   }
 
