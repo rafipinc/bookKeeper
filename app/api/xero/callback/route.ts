@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { inngest } from "@/lib/inngest/client";
 import { createClient } from "@/lib/supabase/server";
 import { summarizeValue, xeroDebug, xeroError } from "@/lib/xero/debug";
 import { exchangeCodeForTokens, fetchXeroConnections } from "@/lib/xero/oauth";
@@ -176,6 +177,34 @@ export async function GET(request: NextRequest): Promise<Response> {
       xeroTenantIds: rows.map((row) => row.xero_tenant_id),
     });
     return redirectToSettings("persist_failed");
+  }
+
+  const { data: persistedConnections, error: persistedConnectionsError } = await supabase
+    .from("xero_connections")
+    .select("id")
+    .eq("platform_tenant_id", stateRow.platform_tenant_id)
+    .in(
+      "xero_tenant_id",
+      rows.map((row) => row.xero_tenant_id),
+    );
+
+  if (persistedConnectionsError) {
+    xeroError("xero_connections_post_upsert_lookup_failed", persistedConnectionsError, {
+      platformTenantId: stateRow.platform_tenant_id,
+      connectionCount: rows.length,
+    });
+    return redirectToSettings("persist_failed");
+  }
+
+  if (persistedConnections?.length) {
+    await inngest.send(
+      persistedConnections.map((connection) => ({
+        name: "xero/tenant.sync.initial",
+        data: {
+          connectionId: connection.id,
+        },
+      })),
+    );
   }
 
   xeroDebug("callback_completed", {
