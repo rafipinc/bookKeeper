@@ -62,7 +62,7 @@ pnpm dev
 pnpm dev:inngest
 ```
 
-- In local development, the Inngest client defaults to dev mode when `INNGEST_EVENT_KEY` is blank. Production still requires `INNGEST_EVENT_KEY`.
+- In local development, the Inngest client defaults to dev mode even if `INNGEST_EVENT_KEY` is present. Set `INNGEST_DEV=false` only when you intentionally want local code to send events to Inngest Cloud.
 - OpenAI extraction uses `OPENAI_API_KEY` and `OPENAI_BILL_EXTRACTION_MODEL`, defaulting to `gpt-5`.
 - Bill attachments use `BILL_ATTACHMENTS_BUCKET`, defaulting to `xero-bill-documents`.
 - `gh` is not installed locally.
