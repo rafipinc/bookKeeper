@@ -1,6 +1,6 @@
 "use client";
 
-import { FilePlus2, LayoutDashboard, ListChecks, Plug } from "lucide-react";
+import { FilePlus2, LayoutDashboard, ListChecks, Plug, ReceiptText } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -18,7 +18,10 @@ const navSections = [
   },
   {
     label: "Compose",
-    items: [{ href: "/compose/invoice", label: "New invoice", icon: FilePlus2 }],
+    items: [
+      { href: "/compose/invoice", label: "New invoice", icon: FilePlus2 },
+      { href: "/compose/bill", label: "New bill", icon: ReceiptText },
+    ],
   },
 ];
 
