@@ -193,14 +193,32 @@ export class XeroClient {
   }
 
   async createContact(payload: unknown): Promise<string> {
+    const contact = await this.createContactRecord(payload);
+    return contact.ContactID;
+  }
+
+  async createContactRecord(payload: unknown): Promise<{
+    ContactID: string;
+    Name: string | null;
+    EmailAddress: string | null;
+    IsCustomer: boolean | null;
+    IsSupplier: boolean | null;
+  }> {
     const response = await this.request<XeroCreateContactResponse>("POST", "/Contacts", { body: payload });
-    const contactId = response.Contacts?.[0]?.ContactID;
+    const firstContact = response.Contacts?.[0];
+    const contactId = firstContact?.ContactID;
 
     if (!contactId) {
       throw new NonRetryableXeroError("Xero contact creation response did not include ContactID.", 422, JSON.stringify(response));
     }
 
-    return contactId;
+    return {
+      ContactID: contactId,
+      Name: firstContact?.Name ?? null,
+      EmailAddress: firstContact?.EmailAddress ?? null,
+      IsCustomer: firstContact?.IsCustomer ?? null,
+      IsSupplier: firstContact?.IsSupplier ?? null,
+    };
   }
 
   attachToInvoice(invoiceId: string, filename: string, contentType: string, bytes: Uint8Array | ArrayBuffer) {
@@ -263,6 +281,10 @@ type XeroInvoicePayload = Record<string, unknown>;
 type XeroCreateContactResponse = {
   Contacts?: Array<{
     ContactID?: string;
+    Name?: string;
+    EmailAddress?: string;
+    IsCustomer?: boolean;
+    IsSupplier?: boolean;
   }>;
 };
 
