@@ -20,7 +20,7 @@ export default async function ComposeBillDraftPage({ params }: { params: Promise
   const [{ data: draft }, { data: connections }] = await Promise.all([
     supabase
       .from("xero_invoices")
-      .select("id,xero_tenant_id,contact_id,date,due_date,reference,xero_invoice_number,publish_error,line_items_json")
+      .select("id,xero_tenant_id,contact_id,date,due_date,reference,xero_invoice_number,publish_error,attachment_path,line_items_json")
       .eq("platform_tenant_id", platformTenantId)
       .eq("type", "ACCPAY")
       .eq("id", id)
@@ -111,6 +111,7 @@ export default async function ComposeBillDraftPage({ params }: { params: Promise
         reference: draft.reference,
         invoiceNumber: draft.xero_invoice_number,
         publishError: draft.publish_error,
+        attachmentPath: draft.attachment_path,
         lineItemsJson: draft.line_items_json,
       }}
       taxRates={taxRates.map((rate) => ({

@@ -5,6 +5,8 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
+import { createClient } from "@/lib/supabase/client";
+
 type XeroConnectionOption = {
   id: string;
   xeroTenantId: string;
@@ -42,6 +44,7 @@ type DraftBill = {
   reference: string | null;
   invoiceNumber: string | null;
   publishError: string | null;
+  attachmentPath: string | null;
   lineItemsJson: unknown;
 };
 
@@ -56,10 +59,16 @@ type LineItem = {
 };
 
 type SaveDraftResponse = {
-  invoice?: {
+  bill?: {
     id?: string;
     xero_invoice_number?: string | null;
   };
+};
+
+type UploadUrlResponse = {
+  bucket?: string;
+  attachmentPath?: string;
+  token?: string;
 };
 
 type PublishResponse = {
@@ -255,6 +264,7 @@ export function BillComposer({
   const [draftId, setDraftId] = useState(initialDraft?.id ?? "");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedPreviewUrl, setUploadedPreviewUrl] = useState<string | null>(null);
+  const [attachmentPath, setAttachmentPath] = useState(initialDraft?.attachmentPath ?? "");
   const [dismissedWarning, setDismissedWarning] = useState(false);
 
   const selectedConnection = connections.find((connection) => connection.id === selectedConnectionId) ?? null;
@@ -294,10 +304,11 @@ export function BillComposer({
         parseMoneyToCents(row.unitAmount) > 0,
     );
 
-  async function saveDraft() {
+  async function saveDraft(options: { attachmentPathOverride?: string } = {}) {
     if (!canSave) {
       throw new Error("Add bill basics before saving.");
     }
+    const payloadAttachmentPath = (options.attachmentPathOverride ?? attachmentPath) || null;
     const payload = {
       id: draftId || undefined,
       xeroConnectionId: selectedConnectionId,
@@ -306,6 +317,8 @@ export function BillComposer({
       dueDate,
       reference: reference.trim() || null,
       invoiceNumber: billNumber.trim() || null,
+      attachmentPath: payloadAttachmentPath,
+      attachmentStatus: payloadAttachmentPath ? "pending" : null,
       lineItems: lineItems.map((row) => ({
         description: row.description.trim(),
         quantity: Number.parseFloat(row.quantity) || 0,
@@ -323,16 +336,60 @@ export function BillComposer({
       throw new Error((await response.text()) || "Could not save draft.");
     }
     const data = (await response.json()) as SaveDraftResponse;
-    if (data.invoice?.id) {
-      setDraftId(data.invoice.id);
-      if (data.invoice.id !== draftId) {
-        router.replace(`/compose/bill/${data.invoice.id}`);
+    if (data.bill?.id) {
+      setDraftId(data.bill.id);
+      if (data.bill.id !== draftId) {
+        router.replace(`/compose/bill/${data.bill.id}`);
       }
     }
-    if (data.invoice?.xero_invoice_number) {
-      setBillNumber(data.invoice.xero_invoice_number);
+    if (data.bill?.xero_invoice_number) {
+      setBillNumber(data.bill.xero_invoice_number);
     }
-    return data.invoice?.id ?? draftId;
+    return data.bill?.id ?? draftId;
+  }
+
+  async function ensureAttachmentUploaded(billId: string) {
+    if (!uploadedFile || attachmentPath) {
+      return attachmentPath;
+    }
+
+    const response = await fetch("/api/bills/attachments/upload-url", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ billId, filename: uploadedFile.name }),
+    });
+    if (!response.ok) {
+      throw new Error((await response.text()) || "Could not prepare attachment upload.");
+    }
+
+    const data = (await response.json()) as UploadUrlResponse;
+    if (!data.bucket || !data.attachmentPath || !data.token) {
+      throw new Error("Attachment upload response was incomplete.");
+    }
+
+    const supabase = createClient();
+    const { error: uploadError } = await supabase.storage
+      .from(data.bucket)
+      .uploadToSignedUrl(data.attachmentPath, data.token, uploadedFile);
+
+    if (uploadError) {
+      throw new Error(uploadError.message || "Could not upload attachment.");
+    }
+
+    setAttachmentPath(data.attachmentPath);
+    return data.attachmentPath;
+  }
+
+  async function saveDraftWithAttachment() {
+    const savedDraftId = await saveDraft();
+    if (!savedDraftId) {
+      return savedDraftId;
+    }
+    const uploadedPath = await ensureAttachmentUploaded(savedDraftId);
+    if (uploadedPath && uploadedPath !== attachmentPath) {
+      await saveDraft({ attachmentPathOverride: uploadedPath });
+    }
+    return savedDraftId;
   }
 
   function updateLineItem(id: string, field: keyof LineItem, value: string) {
@@ -345,6 +402,7 @@ export function BillComposer({
     }
     setUploadedFile(null);
     setUploadedPreviewUrl(null);
+    setAttachmentPath("");
   }
 
   function applyExtraction(extraction: Record<string, unknown>) {
@@ -695,7 +753,7 @@ export function BillComposer({
               try {
                 setError(null);
                 setSuccessMessage(null);
-                await saveDraft();
+                await saveDraftWithAttachment();
               } catch (saveError) {
                 setError(saveError instanceof Error ? saveError.message : "Could not save draft.");
               }
@@ -707,7 +765,7 @@ export function BillComposer({
                 setError(null);
                 setPublishError(null);
                 setSuccessMessage(null);
-                const savedDraftId = await saveDraft();
+                const savedDraftId = await saveDraftWithAttachment();
                 if (!savedDraftId) {
                   throw new Error("Draft was not created.");
                 }
