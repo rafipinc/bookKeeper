@@ -4,7 +4,7 @@ Last updated: 2026-05-25
 
 ## Current State
 
-Phase 2 Xero work through BKP-024 has been reviewed and merged locally into `develop`.
+Phase 2 Xero work through BKP-024 has been reviewed and merged into `develop`.
 
 The merged stack includes:
 
@@ -55,6 +55,14 @@ git push origin develop
 
 ## Local Notes
 
+- For local sync/publish jobs, run the Next dev server and the Inngest dev server in separate terminals:
+
+```bash
+pnpm dev
+pnpm dev:inngest
+```
+
+- In local development, the Inngest client defaults to dev mode when `INNGEST_EVENT_KEY` is blank. Production still requires `INNGEST_EVENT_KEY`.
 - OpenAI extraction uses `OPENAI_API_KEY` and `OPENAI_BILL_EXTRACTION_MODEL`, defaulting to `gpt-5`.
 - Bill attachments use `BILL_ATTACHMENTS_BUCKET`, defaulting to `xero-bill-documents`.
 - `gh` is not installed locally.

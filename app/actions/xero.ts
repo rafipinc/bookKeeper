@@ -40,7 +40,7 @@ export async function syncXeroConnection(connectionId: string) {
   }
 
   await inngest.send({
-    name: "xero/tenant.sync.delta",
+    name: "xero/tenant.sync.initial",
     data: {
       connectionId: connection.id,
       platformTenantId,
