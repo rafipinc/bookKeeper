@@ -140,6 +140,17 @@ describe("XeroClient", () => {
     );
   });
 
+  it("throws a not-modified error for 304 responses", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 304 })));
+
+    const { XeroClient, XeroNotModifiedError } = await import("./client");
+    const client = new XeroClient("11111111-1111-1111-1111-111111111111");
+
+    await expect(client.listContacts({ ifModifiedSince: "2026-05-25T01:02:03.000Z" })).rejects.toBeInstanceOf(
+      XeroNotModifiedError,
+    );
+  });
+
   it("formats If-Modified-Since and auto-iterates paginated responses until callback stops", async () => {
     const fetchMock = vi.fn(async () => jsonResponse({ BankTransactions: [] }));
     vi.stubGlobal("fetch", fetchMock);
@@ -161,6 +172,15 @@ describe("XeroClient", () => {
       "https://api.xero.com/api.xro/2.0/BankTransactions?page=2&where=Status%3D%3D%22AUTHORISED%22",
     );
     expect(requestInit.headers).toMatchObject({
+      "If-Modified-Since": "Mon, 25 May 2026 01:02:03 GMT",
+    });
+
+    await client.listAccounts({ ifModifiedSince: "2026-05-25T01:02:03.000Z" });
+    await client.listTaxRates({ ifModifiedSince: "2026-05-25T01:02:03.000Z" });
+    expect((fetchMock.mock.calls[1] as unknown as [URL, RequestInit])[1].headers).toMatchObject({
+      "If-Modified-Since": "Mon, 25 May 2026 01:02:03 GMT",
+    });
+    expect((fetchMock.mock.calls[2] as unknown as [URL, RequestInit])[1].headers).toMatchObject({
       "If-Modified-Since": "Mon, 25 May 2026 01:02:03 GMT",
     });
 
