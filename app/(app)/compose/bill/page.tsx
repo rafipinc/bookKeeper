@@ -1,6 +1,7 @@
 import { BillComposer } from "@/app/(app)/compose/bill/bill-composer";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
+import { getReadyXeroTenantIds } from "@/lib/xero/composer-readiness";
 
 export default async function ComposeBillPage() {
   const supabase = await createClient();
@@ -62,7 +63,13 @@ export default async function ComposeBillPage() {
       .order("name", { ascending: true }),
   ]);
 
-  if (!contacts?.length || !accounts?.length || !taxRates?.length) {
+  const composerContacts = contacts ?? [];
+  const composerAccounts = accounts ?? [];
+  const composerTaxRates = taxRates ?? [];
+  const readyXeroTenantIds = getReadyXeroTenantIds(xeroTenantIds, composerContacts, composerAccounts, composerTaxRates);
+  const readyConnections = connections.filter((connection) => readyXeroTenantIds.has(connection.xero_tenant_id));
+
+  if (!readyConnections.length) {
     return (
       <section className="space-y-4">
         <h1 className="text-xl font-semibold md:text-2xl">Compose bill</h1>
@@ -80,26 +87,26 @@ export default async function ComposeBillPage() {
 
   return (
     <BillComposer
-      accounts={accounts.map((account) => ({
+      accounts={composerAccounts.map((account) => ({
         id: account.id,
         xeroTenantId: account.xero_tenant_id,
         code: account.code,
         name: account.name,
       }))}
-      connections={connections.map((connection) => ({
+      connections={readyConnections.map((connection) => ({
         id: connection.id,
         xeroTenantId: connection.xero_tenant_id,
         xeroTenantName: connection.xero_tenant_name,
         status: connection.status,
       }))}
-      contacts={contacts.map((contact) => ({
+      contacts={composerContacts.map((contact) => ({
         id: contact.id,
         xeroTenantId: contact.xero_tenant_id,
         name: contact.name,
         email: contact.email,
       }))}
       initialDraft={null}
-      taxRates={taxRates.map((rate) => ({
+      taxRates={composerTaxRates.map((rate) => ({
         xeroTenantId: rate.xero_tenant_id,
         xeroTaxType: rate.xero_tax_type,
         name: rate.name,

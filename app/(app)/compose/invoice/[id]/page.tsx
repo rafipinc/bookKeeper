@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { InvoiceComposer } from "@/app/(app)/compose/invoice/invoice-composer";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
+import { getReadyXeroTenantIds } from "@/lib/xero/composer-readiness";
 
 export default async function ComposeInvoiceDraftPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -66,12 +67,20 @@ export default async function ComposeInvoiceDraftPage({ params }: { params: Prom
       .order("name", { ascending: true }),
   ]);
 
-  if (!contacts?.length || !accounts?.length || !taxRates?.length) {
+  const composerContacts = contacts ?? [];
+  const composerAccounts = accounts ?? [];
+  const composerTaxRates = taxRates ?? [];
+  const readyXeroTenantIds = getReadyXeroTenantIds(xeroTenantIds, composerContacts, composerAccounts, composerTaxRates);
+  const readyConnections = connections.filter((connection) => readyXeroTenantIds.has(connection.xero_tenant_id));
+
+  if (!readyConnections.length || !readyXeroTenantIds.has(draft.xero_tenant_id)) {
     return (
       <section className="space-y-4">
         <h1 className="text-xl font-semibold md:text-2xl">Compose invoice</h1>
         <div className="bkp-card max-w-xl p-5">
-          <p className="text-sm text-[var(--text-secondary)]">Synced contact/account/tax data is missing. Run sync from Settings → Integrations and retry.</p>
+          <p className="text-sm text-[var(--text-secondary)]">
+            This draft belongs to a Xero organisation that still needs synced customers, revenue accounts, and tax rates.
+          </p>
           <a className="bkp-button mt-4 inline-flex h-10 items-center px-4 text-sm" href="/settings/integrations">
             Open Settings → Integrations
           </a>
@@ -82,19 +91,19 @@ export default async function ComposeInvoiceDraftPage({ params }: { params: Prom
 
   return (
     <InvoiceComposer
-      accounts={accounts.map((account) => ({
+      accounts={composerAccounts.map((account) => ({
         id: account.id,
         xeroTenantId: account.xero_tenant_id,
         code: account.code,
         name: account.name,
       }))}
-      connections={connections.map((connection) => ({
+      connections={readyConnections.map((connection) => ({
         id: connection.id,
         xeroTenantId: connection.xero_tenant_id,
         xeroTenantName: connection.xero_tenant_name,
         status: connection.status,
       }))}
-      contacts={contacts.map((contact) => ({
+      contacts={composerContacts.map((contact) => ({
         id: contact.id,
         xeroTenantId: contact.xero_tenant_id,
         name: contact.name,
@@ -111,7 +120,7 @@ export default async function ComposeInvoiceDraftPage({ params }: { params: Prom
         publishError: draft.publish_error,
         lineItemsJson: draft.line_items_json,
       }}
-      taxRates={taxRates.map((rate) => ({
+      taxRates={composerTaxRates.map((rate) => ({
         xeroTenantId: rate.xero_tenant_id,
         xeroTaxType: rate.xero_tax_type,
         name: rate.name,

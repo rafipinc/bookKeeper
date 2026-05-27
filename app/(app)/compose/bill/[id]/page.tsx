@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { BillComposer } from "@/app/(app)/compose/bill/bill-composer";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
+import { getReadyXeroTenantIds } from "@/lib/xero/composer-readiness";
 
 export default async function ComposeBillDraftPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -66,13 +67,19 @@ export default async function ComposeBillDraftPage({ params }: { params: Promise
       .order("name", { ascending: true }),
   ]);
 
-  if (!contacts?.length || !accounts?.length || !taxRates?.length) {
+  const composerContacts = contacts ?? [];
+  const composerAccounts = accounts ?? [];
+  const composerTaxRates = taxRates ?? [];
+  const readyXeroTenantIds = getReadyXeroTenantIds(xeroTenantIds, composerContacts, composerAccounts, composerTaxRates);
+  const readyConnections = connections.filter((connection) => readyXeroTenantIds.has(connection.xero_tenant_id));
+
+  if (!readyConnections.length || !readyXeroTenantIds.has(draft.xero_tenant_id)) {
     return (
       <section className="space-y-4">
         <h1 className="text-xl font-semibold md:text-2xl">Compose bill</h1>
         <div className="bkp-card max-w-xl p-5">
           <p className="text-sm text-[var(--text-secondary)]">
-            Synced supplier/account/tax data is missing. Run sync from Settings → Integrations and retry.
+            This draft belongs to a Xero organisation that still needs synced suppliers, expense accounts, and tax rates.
           </p>
           <a className="bkp-button mt-4 inline-flex h-10 items-center px-4 text-sm" href="/settings/integrations">
             Open Settings → Integrations
@@ -84,19 +91,19 @@ export default async function ComposeBillDraftPage({ params }: { params: Promise
 
   return (
     <BillComposer
-      accounts={accounts.map((account) => ({
+      accounts={composerAccounts.map((account) => ({
         id: account.id,
         xeroTenantId: account.xero_tenant_id,
         code: account.code,
         name: account.name,
       }))}
-      connections={connections.map((connection) => ({
+      connections={readyConnections.map((connection) => ({
         id: connection.id,
         xeroTenantId: connection.xero_tenant_id,
         xeroTenantName: connection.xero_tenant_name,
         status: connection.status,
       }))}
-      contacts={contacts.map((contact) => ({
+      contacts={composerContacts.map((contact) => ({
         id: contact.id,
         xeroTenantId: contact.xero_tenant_id,
         name: contact.name,
@@ -114,7 +121,7 @@ export default async function ComposeBillDraftPage({ params }: { params: Promise
         attachmentPath: draft.attachment_path,
         lineItemsJson: draft.line_items_json,
       }}
-      taxRates={taxRates.map((rate) => ({
+      taxRates={composerTaxRates.map((rate) => ({
         xeroTenantId: rate.xero_tenant_id,
         xeroTaxType: rate.xero_tax_type,
         name: rate.name,
