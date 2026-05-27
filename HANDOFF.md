@@ -34,7 +34,7 @@ Phase 2.1 Xero push-to-accounting work is complete on `develop`:
 
 ## Next Card
 
-BKP-017 / RAF-44 — complete the steps above, then move to BKP-018 / RAF-45 (rules evaluator Inngest job).
+BKP-018 / RAF-45 — rules evaluator Inngest job: implemented on branch `bkp-018-rules-evaluator-job`. Open PR `[BKP-018] rules evaluator Inngest job`, then move to BKP-026 / RAF-46 (AI suggestion service).
 
 ## Low-Token Workflow
 
