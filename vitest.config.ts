@@ -21,6 +21,7 @@ export default defineConfig({
       "tests/unit/**/*.{test,spec}.{ts,tsx}",
       "tests/integration/**/*.{test,spec}.{ts,tsx}",
       "tests/actions/**/*.{test,spec}.{ts,tsx}",
+      "tests/db/**/*.{test,spec}.{ts,tsx}",
     ],
     exclude: ["tests/e2e/**"],
   },

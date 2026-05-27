@@ -726,6 +726,265 @@ export type Database = {
         };
         Relationships: [];
       };
+      rules: {
+        Row: {
+          id: string;
+          platform_tenant_id: string;
+          xero_tenant_id: string | null;
+          name: string;
+          description: string | null;
+          enabled: boolean;
+          priority: number;
+          mode: "suggest" | "auto_apply";
+          current_version_id: string | null;
+          created_by: string;
+          created_at: string;
+          archived_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          platform_tenant_id: string;
+          xero_tenant_id?: string | null;
+          name: string;
+          description?: string | null;
+          enabled?: boolean;
+          priority: number;
+          mode?: "suggest" | "auto_apply";
+          current_version_id?: string | null;
+          created_by: string;
+          created_at?: string;
+          archived_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          platform_tenant_id?: string;
+          xero_tenant_id?: string | null;
+          name?: string;
+          description?: string | null;
+          enabled?: boolean;
+          priority?: number;
+          mode?: "suggest" | "auto_apply";
+          current_version_id?: string | null;
+          created_by?: string;
+          created_at?: string;
+          archived_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "rules_platform_tenant_id_fkey";
+            columns: ["platform_tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "platform_tenants";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "rules_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "rules_current_version_id_fkey";
+            columns: ["current_version_id"];
+            isOneToOne: false;
+            referencedRelation: "rule_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      rule_conditions: {
+        Row: {
+          id: string;
+          rule_id: string;
+          group_id: number;
+          field: "description" | "amount_cents" | "xero_account_id" | "contact_name" | "date" | "reference";
+          operator: "contains" | "equals" | "regex" | "between" | "gte" | "lte" | "in" | "starts_with" | "ends_with";
+          value_json: Json;
+        };
+        Insert: {
+          id?: string;
+          rule_id: string;
+          group_id: number;
+          field: "description" | "amount_cents" | "xero_account_id" | "contact_name" | "date" | "reference";
+          operator: "contains" | "equals" | "regex" | "between" | "gte" | "lte" | "in" | "starts_with" | "ends_with";
+          value_json: Json;
+        };
+        Update: {
+          id?: string;
+          rule_id?: string;
+          group_id?: number;
+          field?: "description" | "amount_cents" | "xero_account_id" | "contact_name" | "date" | "reference";
+          operator?: "contains" | "equals" | "regex" | "between" | "gte" | "lte" | "in" | "starts_with" | "ends_with";
+          value_json?: Json;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "rule_conditions_rule_id_fkey";
+            columns: ["rule_id"];
+            isOneToOne: false;
+            referencedRelation: "rules";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      rule_actions: {
+        Row: {
+          id: string;
+          rule_id: string;
+          action_type: "set_category" | "set_contact" | "set_project" | "set_tax_rate";
+          value_json: Json;
+        };
+        Insert: {
+          id?: string;
+          rule_id: string;
+          action_type: "set_category" | "set_contact" | "set_project" | "set_tax_rate";
+          value_json: Json;
+        };
+        Update: {
+          id?: string;
+          rule_id?: string;
+          action_type?: "set_category" | "set_contact" | "set_project" | "set_tax_rate";
+          value_json?: Json;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "rule_actions_rule_id_fkey";
+            columns: ["rule_id"];
+            isOneToOne: false;
+            referencedRelation: "rules";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      rule_versions: {
+        Row: {
+          id: string;
+          rule_id: string;
+          version: number;
+          snapshot_json: Json;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          rule_id: string;
+          version: number;
+          snapshot_json: Json;
+          created_by: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          rule_id?: string;
+          version?: number;
+          snapshot_json?: Json;
+          created_by?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "rule_versions_rule_id_fkey";
+            columns: ["rule_id"];
+            isOneToOne: false;
+            referencedRelation: "rules";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "rule_versions_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      transaction_rule_matches: {
+        Row: {
+          id: string;
+          xero_bank_transaction_id: string;
+          rule_id: string | null;
+          rule_version_id: string | null;
+          matched_at: string;
+          action_applied: boolean;
+          accepted_at: string | null;
+          override_by_user_id: string | null;
+          override_at: string | null;
+          suggestion_source: "rule" | "ai";
+          ai_confidence: number | null;
+          ai_model: string | null;
+          suggested_category_id: string | null;
+          suggested_contact_id: string | null;
+          suggested_project_id: string | null;
+          suggested_tax_rate_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          xero_bank_transaction_id: string;
+          rule_id?: string | null;
+          rule_version_id?: string | null;
+          matched_at?: string;
+          action_applied?: boolean;
+          accepted_at?: string | null;
+          override_by_user_id?: string | null;
+          override_at?: string | null;
+          suggestion_source?: "rule" | "ai";
+          ai_confidence?: number | null;
+          ai_model?: string | null;
+          suggested_category_id?: string | null;
+          suggested_contact_id?: string | null;
+          suggested_project_id?: string | null;
+          suggested_tax_rate_id?: string | null;
+        };
+        Update: {
+          id?: string;
+          xero_bank_transaction_id?: string;
+          rule_id?: string | null;
+          rule_version_id?: string | null;
+          matched_at?: string;
+          action_applied?: boolean;
+          accepted_at?: string | null;
+          override_by_user_id?: string | null;
+          override_at?: string | null;
+          suggestion_source?: "rule" | "ai";
+          ai_confidence?: number | null;
+          ai_model?: string | null;
+          suggested_category_id?: string | null;
+          suggested_contact_id?: string | null;
+          suggested_project_id?: string | null;
+          suggested_tax_rate_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transaction_rule_matches_xero_bank_transaction_id_fkey";
+            columns: ["xero_bank_transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "xero_bank_transactions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transaction_rule_matches_rule_id_fkey";
+            columns: ["rule_id"];
+            isOneToOne: false;
+            referencedRelation: "rules";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transaction_rule_matches_rule_version_id_fkey";
+            columns: ["rule_version_id"];
+            isOneToOne: false;
+            referencedRelation: "rule_versions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transaction_rule_matches_override_by_user_id_fkey";
+            columns: ["override_by_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       xero_oauth_states: {
         Row: {
           id: string;
