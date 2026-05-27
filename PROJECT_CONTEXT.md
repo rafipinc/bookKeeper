@@ -1,6 +1,6 @@
 # Project Context - bookkeeping-app
 
-Last updated: 2026-05-27 (BKP-018 implementation)
+Last updated: 2026-05-27 (BKP-026 ai-suggestion Inngest function complete; ready for PR + BKP-019)
 Maintainer: every coding agent before ending a material session
 
 This is the living source of truth for low-token development. Codex and Claude Code must read this before implementation and must update it before handing off.
@@ -20,6 +20,8 @@ Done:
 - BKP-013 / RAF-23: Xero API client wrapper.
 - BKP-014 / RAF-24: initial Xero sync.
 - BKP-015 / RAF-25: delta Xero sync.
+- BKP-017 / RAF-44: rules engine schema migration.
+- BKP-018 / RAF-45: rules evaluator Inngest job.
 - BKP-023 / RAF-33: invoice composer and publish to Xero.
 - BKP-024 / RAF-34: bill capture, extraction, attachment upload, and publish to Xero.
 
@@ -27,9 +29,9 @@ Current next slice: AI-assisted reconciliation queue.
 
 Active sequence:
 
-1. BKP-017 / RAF-44: rules engine schema migration.
-2. BKP-018 / RAF-45: rules evaluator Inngest job.
-3. BKP-026 / RAF-46: AI suggestion service.
+1. BKP-017 / RAF-44: rules engine schema migration. Complete.
+2. BKP-018 / RAF-45: rules evaluator Inngest job. Complete.
+3. BKP-026 / RAF-46: AI suggestion service. Next active card.
 4. BKP-019 / RAF-47: pre-reconciliation queue page.
 
 Do not implement duplicate/deferred legacy cards unless Rafi explicitly reactivates them:
@@ -41,14 +43,16 @@ Do not implement duplicate/deferred legacy cards unless Rafi explicitly reactiva
 
 ## Active Work
 
-Active card: BKP-018 / RAF-45 - rules evaluator Inngest job.
+Active card: BKP-026 / RAF-46 — AI suggestion service. Implementation complete on branch `bkp-026-ai-suggestion-service`. PR not yet created — create before handing off.
 
-- Branch: `bkp-018-rules-evaluator-job` (off `bkp-017-rules-engine-schema`).
-- Added `lib/inngest/functions/rules-evaluator.ts` + tests; registered in `lib/inngest/functions/index.ts`.
-- Triggers on `xero/bank_transaction.created`, concurrency key `event.data.xeroTenantId` cap 4.
-- On first match (flat conditions, AND within group / OR across groups, priority asc) inserts `transaction_rule_matches` row with `suggestion_source='rule'`. Re-runs delete prior rule-source matches for the txn before inserting (idempotent).
-- On no match emits `xero/bank_transaction.no_rule_match` for BKP-026.
-- Untracked `xero-tenant-delta-sync 2.ts` duplicates from previous session still present in working tree — not yet cleaned up.
+Branch: `bkp-026-ai-suggestion-service`
+Files changed:
+- `lib/inngest/functions/ai-suggestion.ts` — new Inngest function (id: `ai-suggestion`, retries: 0, event: `xero/bank_transaction.no_rule_match`).
+- `lib/inngest/functions/ai-suggestion.test.ts` — 17 tests covering valid + error paths.
+- `lib/inngest/functions/index.ts` — registered `aiSuggestion`.
+No migration needed: schema columns (`suggestion_source`, `ai_confidence`, `ai_model`) were added upfront in migration 0013.
+
+Next: BKP-019 / RAF-47 — pre-reconciliation queue page.
 
 ## Context Budget
 
@@ -133,12 +137,22 @@ pnpm dev:inngest
 
 ## Recent Session Log
 
+### 2026-05-27 - BKP-026 AI suggestion service
+
+- Implemented Inngest function `ai-suggestion` (`lib/inngest/functions/ai-suggestion.ts`).
+- Consumes `xero/bank_transaction.no_rule_match`; fetches transaction facts, chart of accounts (EXPENSE/REVENUE filtered), top-50 fuzzy-ranked contacts, last-20 accepted suggestions as few-shot context.
+- Calls OpenAI Chat Completions with structured JSON output (model: `OPENAI_RECONCILIATION_MODEL`, default `gpt-4o-mini`). Prompt capped at 6,000 tokens.
+- On error: logs error type only (no PII), returns null, does not insert, does not retry.
+- Upserts `transaction_rule_matches` with `suggestion_source='ai'`, `ai_confidence`, `ai_model`.
+- No migration required (columns added upfront in migration 0013).
+- 17 new unit tests; all 72 tests pass.
+
 ### 2026-05-27 - BKP-018 rules evaluator
 
 - Implemented Inngest function `rules-evaluator` (`lib/inngest/functions/rules-evaluator.ts`) with pure `evaluateRules` core for unit-test coverage.
 - Unit tests cover: no rules, no match, single match + action resolution, first-match-wins by priority, AND within group, OR across groups, between operator, empty-conditions rule does not match.
 - Verification: `pnpm typecheck`, `pnpm lint`, `pnpm test` — all pass (49 tests).
-- Next: open PR `[BKP-018] rules evaluator Inngest job`, then move to BKP-026 (AI suggestion service).
+- BKP-018 is complete; next active work is BKP-026 / RAF-46 (AI suggestion service).
 
 ### 2026-05-27 - Workflow hardening
 
@@ -148,13 +162,12 @@ pnpm dev:inngest
 
 ## Verification
 
-BKP-018 evaluator:
+Current baseline after BKP-026:
 
 - `pnpm typecheck` clean.
 - `pnpm lint` clean.
-- `pnpm test` — 13 files / 49 tests passing, including 9 new rules-evaluator tests.
+- `pnpm test` — 14 files / 72 tests passing, including 17 new ai-suggestion tests.
 
 ## Known Blockers or Risks
 
-- `develop` had uncommitted BKP-017-looking work and accidental duplicate-looking ` 2.ts` files at the time this workflow file was created.
 - Phase 2 docs and Linear have duplicate `BKP-026` labels. Use Linear issue IDs, not only BKP numbers, when referring to current work.

@@ -1,3 +1,4 @@
+import { aiSuggestion } from "./ai-suggestion";
 import { helloPing } from "./hello-ping";
 import { rulesEvaluator } from "./rules-evaluator";
 import { xeroBillPublish } from "./xero-bill-publish";
@@ -13,8 +14,10 @@ export const functions = [
   xeroInvoicePublish,
   xeroBillPublish,
   rulesEvaluator,
+  aiSuggestion,
 ];
 
+export { aiSuggestion };
 export { helloPing };
 export { rulesEvaluator };
 export { xeroBillPublish };

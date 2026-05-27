@@ -17,24 +17,26 @@ Phase 2.1 Xero push-to-accounting work is complete on `develop`:
 - BKP-023 / RAF-33: invoice composer and publish to Xero.
 - BKP-024 / RAF-34: bill capture, AI extraction, attachment upload, and publish to Xero.
 
-**BKP-017 / RAF-44 — rules engine schema — files written, pending `supabase db push` + final verification:**
+AI-assisted reconciliation queue progress:
 
-- `supabase/migrations/0013_rules_engine_schema.sql` — all five tables + RLS + indexes. Also includes the BKP-026 columns on `transaction_rule_matches` upfront (`suggestion_source`, `ai_confidence`, `ai_model`).
-- `tests/db/rules-rls.test.ts` — four mock-based isolation tests (tenant A/B visibility + cross-tenant insert block).
-- `vitest.config.ts` — added `tests/db/**` to include patterns.
-- Feature spec: `phase-2/specs/0004-ai-reconciliation-queue.md` (source of truth for the full reconciliation feature — BKP-017, 018, 026, 019).
+- BKP-017 / RAF-44 — rules engine schema migration: complete.
+- BKP-018 / RAF-45 — rules evaluator Inngest job: complete.
+- Feature spec: `phase-2/specs/0004-ai-reconciliation-queue.md` remains the source of truth for the full reconciliation feature slice.
 
-**Still to do for BKP-017:**
+## Completed Card
 
-1. Create a feature branch off `develop` (`git switch -c bkp-017-rules-engine-schema`).
-2. Run `supabase db push` locally to apply the migration and confirm it runs cleanly.
-3. Run `supabase gen types typescript --local > lib/database.types.ts` to regenerate types.
-4. Run `pnpm typecheck && pnpm lint && pnpm test` — all must pass.
-5. Open PR titled `[BKP-017] rules engine schema migration`.
+BKP-026 / RAF-46 — AI suggestion service. Complete on branch `bkp-026-ai-suggestion-service`. PR not yet created.
 
 ## Next Card
 
-BKP-018 / RAF-45 — rules evaluator Inngest job: implemented on branch `bkp-018-rules-evaluator-job`. Open PR `[BKP-018] rules evaluator Inngest job`, then move to BKP-026 / RAF-46 (AI suggestion service).
+BKP-019 / RAF-47 — Pre-reconciliation queue page.
+
+Minimal context for the next agent:
+
+- Read `PROJECT_CONTEXT.md`, this file, and Linear RAF-47 only.
+- Use `phase-2/specs/0004-ai-reconciliation-queue.md` only for the BKP-019 section unless blocked.
+- BKP-026 branch must be merged to `develop` before BKP-019 starts.
+- Keep one card per branch and PR.
 
 ## Low-Token Workflow
 
@@ -63,7 +65,7 @@ pnpm dev:inngest
 - In local development, the Inngest client defaults to dev mode even if `INNGEST_EVENT_KEY` is present.
 - OpenAI extraction uses `OPENAI_API_KEY` and `OPENAI_BILL_EXTRACTION_MODEL`, defaulting to `gpt-5`.
 - Bill attachments use `BILL_ATTACHMENTS_BUCKET`, defaulting to `xero-bill-documents`.
-- `gh` is not installed locally.
+- GitHub CLI is integrated and available locally: `gh` 2.92.0 at `/opt/homebrew/bin/gh`. Use it for PR creation/review where helpful.
 
 ## Hard Constraints
 
