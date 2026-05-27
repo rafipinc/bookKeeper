@@ -1,70 +1,53 @@
 # Handoff
 
-Last updated: 2026-05-25
+Last updated: 2026-05-27
+
+## Read First
+
+`PROJECT_CONTEXT.md` is now the living source of truth for both Codex and Claude Code. Read it before implementation and update it before ending a material session.
 
 ## Current State
 
-Phase 2 Xero work through BKP-024 has been reviewed and merged into `develop`.
+Phase 2.1 Xero push-to-accounting work is complete on `develop`:
 
-The merged stack includes:
+- BKP-013 / RAF-23: Xero API client wrapper.
+- BKP-014 / RAF-24: initial Xero sync.
+- BKP-015 / RAF-25: delta Xero sync.
+- BKP-010a / RAF-43: `xero_invoices.publish_error`.
+- BKP-023 / RAF-33: invoice composer and publish to Xero.
+- BKP-024 / RAF-34: bill capture, AI extraction, attachment upload, and publish to Xero.
 
-- BKP-010a: `xero_invoices.publish_error`
-- BKP-014: initial Xero tenant sync Inngest job
-- BKP-023: ACCREC invoice composer and publish flow
-- BKP-024: ACCPAY bill capture, extraction, attachment upload, and publish flow
+## Next Card
 
-## Review Fixes Applied Before Merge
+Start with BKP-017 / RAF-44: rules engine schema migration.
 
-- Initial sync now imports the full Xero chart of accounts, not only bank accounts, so invoice revenue accounts and bill expense accounts are available after sync.
-- Bill attachment upload now verifies the bill belongs to the current platform tenant before issuing a signed upload URL.
-- Bill draft save rejects attachment paths that do not belong to the current tenant and bill.
-- Bill composer avoids duplicate draft creation when uploading an attachment immediately after the first save.
-- Bill extraction prefill now understands the backend's structured snake_case extraction response.
-- Published bills without attachments no longer remain stuck with `attachment_status='pending'`.
+Before editing, inspect the current dirty worktree. On 2026-05-27 it contained BKP-017-looking changes and two duplicate-looking ` 2.ts` files. Do not delete or overwrite user work without inspecting it.
 
-## Verification Run
+## Low-Token Workflow
 
-On the reviewed stack before merging into `develop`:
+For each session:
 
-```bash
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm build
-```
-
-All passed. `pnpm build` emitted only the existing Next workspace-root warning caused by multiple lockfiles.
-
-## Still To Do
-
-1. Push `develop` if it has not already been pushed:
-
-```bash
-git switch develop
-git status --short --branch
-git push origin develop
-```
-
-2. Optional manual check:
-   - Start `pnpm dev`.
-   - Log in.
-   - Confirm Xero initial sync produces revenue and expense accounts.
-   - Open `/compose/invoice` and `/compose/bill`.
-   - Upload a PDF/JPEG/PNG under 10MB on `/compose/bill`.
-   - Confirm extraction prefill, save draft, and publish queue behavior.
+1. Read `PROJECT_CONTEXT.md`.
+2. Read this file.
+3. Read the active Linear card.
+4. Read only directly relevant code/docs.
+5. Work one card only.
+6. Run targeted verification.
+7. Update `PROJECT_CONTEXT.md`.
+8. Update this handoff only if the immediate next action changed.
 
 ## Local Notes
 
-- For local sync/publish jobs, run the Next dev server and the Inngest dev server in separate terminals:
+- For local sync/publish jobs, run Next and Inngest in separate terminals:
 
 ```bash
 pnpm dev
 pnpm dev:inngest
 ```
 
-- `pnpm dev:inngest` explicitly registers `http://localhost:3000/api/inngest`; restart it if jobs queue but never run.
+- `pnpm dev:inngest` explicitly registers `http://localhost:3000/api/inngest`.
 - `pnpm dev` clears known stale inherited Supabase/Xero env vars before starting Next, so `.env.local` is used.
-- In local development, the Inngest client defaults to dev mode even if `INNGEST_EVENT_KEY` is present. Set `INNGEST_DEV=false` only when you intentionally want local code to send events to Inngest Cloud.
+- In local development, the Inngest client defaults to dev mode even if `INNGEST_EVENT_KEY` is present.
 - OpenAI extraction uses `OPENAI_API_KEY` and `OPENAI_BILL_EXTRACTION_MODEL`, defaulting to `gpt-5`.
 - Bill attachments use `BILL_ATTACHMENTS_BUCKET`, defaulting to `xero-bill-documents`.
 - `gh` is not installed locally.
