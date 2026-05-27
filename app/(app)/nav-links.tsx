@@ -1,6 +1,6 @@
 "use client";
 
-import { FilePlus2, LayoutDashboard, ListChecks, Plug, ReceiptText } from "lucide-react";
+import { FilePlus2, LayoutDashboard, ListChecks, Plug, ReceiptText, ScanLine } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -10,6 +10,12 @@ const navSections = [
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/ledger", label: "Ledger", icon: ListChecks },
+    ],
+  },
+  {
+    label: "Xero",
+    items: [
+      { href: "/reconcile", label: "Pre-reconciliation", icon: ScanLine },
     ],
   },
   {
@@ -25,6 +31,11 @@ const navSections = [
   },
 ];
 
+function isNavActive(pathname: string, href: string): boolean {
+  if (href === "/reconcile") return pathname === "/reconcile" || pathname.startsWith("/reconcile/");
+  return pathname === href;
+}
+
 export function DesktopNav({ disabled = false }: { disabled?: boolean }) {
   const pathname = usePathname();
 
@@ -35,7 +46,7 @@ export function DesktopNav({ disabled = false }: { disabled?: boolean }) {
           <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{section.label}</p>
           <ul className="space-y-1">
             {section.items.map(({ href, label, icon: Icon }) => {
-              const isActive = !disabled && pathname === href;
+              const isActive = !disabled && isNavActive(pathname, href);
 
               if (disabled) {
                 return (
@@ -81,7 +92,7 @@ export function MobileNav() {
   return (
     <nav aria-label="Primary mobile" className="fixed bottom-0 left-0 right-0 flex h-14 border-t border-[var(--border)] bg-[var(--surface)] md:hidden">
       {navSections.flatMap((section) => section.items).map(({ href, label, icon: Icon }) => {
-        const isActive = pathname === href;
+        const isActive = isNavActive(pathname, href);
 
         return (
           <Link
