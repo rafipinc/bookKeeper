@@ -66,6 +66,15 @@ export class NonRetryableXeroError extends Error {
   }
 }
 
+export class XeroNotModifiedError extends Error {
+  readonly notModified = true;
+
+  constructor(readonly status = 304) {
+    super("Xero resource was not modified.");
+    this.name = "XeroNotModifiedError";
+  }
+}
+
 export class XeroClient {
   constructor(private readonly connectionId: string) {
     if (!connectionId) {
@@ -100,7 +109,7 @@ export class XeroClient {
 
       return (await parseResponse<T>(response)) as T;
     } catch (error) {
-      if (error instanceof RetryableXeroError || error instanceof NonRetryableXeroError) {
+      if (error instanceof RetryableXeroError || error instanceof NonRetryableXeroError || error instanceof XeroNotModifiedError) {
         throw error;
       }
 
@@ -126,8 +135,11 @@ export class XeroClient {
     });
   }
 
-  listAccounts(options: Pick<XeroListOptions, "where"> = {}) {
-    return this.request("GET", "/Accounts", { query: listQuery(options) });
+  listAccounts(options: Pick<XeroListOptions, "ifModifiedSince" | "where"> = {}) {
+    return this.request("GET", "/Accounts", {
+      headers: ifModifiedSinceHeader(options.ifModifiedSince),
+      query: listQuery(options),
+    });
   }
 
   listContacts(options: Omit<XeroListOptions, "where"> = {}) {
@@ -137,8 +149,10 @@ export class XeroClient {
     });
   }
 
-  listTaxRates() {
-    return this.request("GET", "/TaxRates");
+  listTaxRates(options: Pick<XeroListOptions, "ifModifiedSince"> = {}) {
+    return this.request("GET", "/TaxRates", {
+      headers: ifModifiedSinceHeader(options.ifModifiedSince),
+    });
   }
 
   async listConnections<T = unknown>(): Promise<T> {
@@ -165,7 +179,7 @@ export class XeroClient {
 
       return (await parseResponse<T>(response)) as T;
     } catch (error) {
-      if (error instanceof RetryableXeroError || error instanceof NonRetryableXeroError) {
+      if (error instanceof RetryableXeroError || error instanceof NonRetryableXeroError || error instanceof XeroNotModifiedError) {
         throw error;
       }
 
@@ -384,6 +398,10 @@ async function parseResponse<T>(response: Response): Promise<T | null> {
 }
 
 function errorForResponse(response: Response, body: string) {
+  if (response.status === 304) {
+    return new XeroNotModifiedError();
+  }
+
   if (response.status === 429) {
     const retryAfterSeconds = parseRetryAfter(response.headers.get("Retry-After"));
     return new RetryableXeroError("Xero rate limit exceeded.", response.status, retryAfterSeconds, body);
