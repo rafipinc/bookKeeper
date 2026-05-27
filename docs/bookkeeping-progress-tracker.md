@@ -8,6 +8,7 @@ The Xero push-to-accounting path is now usable on `develop`:
 
 - BKP-013 / RAF-23: Xero API client wrapper - Done.
 - BKP-014 / RAF-24: Initial Xero sync job - Done.
+- BKP-015 / RAF-25: Delta Xero sync - Done.
 - BKP-010a / RAF-43: `xero_invoices.publish_error` schema addendum - Done.
 - BKP-023 / RAF-33: ACCREC invoice composer and publish flow - Done.
 - BKP-024 / RAF-34: ACCPAY bill capture, extraction, attachment upload, and publish flow - Done.
@@ -29,24 +30,40 @@ Verification run:
 - `pnpm lint`
 - `pnpm test`
 
+## Deployment Fix From 2026-05-27
+
+After RAF-25 was merged to `develop`, the local page appeared unstyled/unhydrated and Vercel deployment failed. Fixed the deployment configuration by:
+
+- Pinning Next.js output file tracing to the app root in `next.config.ts`, avoiding the parent-directory workspace-root inference caused by an unrelated lockfile above the project.
+- Making Vercel use the repo's pnpm workflow explicitly via `vercel.json`.
+
+Verification run:
+
+- `rm -rf .next && pnpm build`
+- `pnpm typecheck`
+- `pnpm lint`
+- `pnpm test`
+- `pnpm dlx vercel build --yes`
+- Production local server asset check: login page JS and CSS chunks returned HTTP 200 with correct content types.
+
 ## Linear Alignment
 
 Updated Linear on 2026-05-27:
 
 - Marked RAF-23, RAF-24, RAF-33, RAF-34, and RAF-43 as Done.
 - Added a delivery note to RAF-34 covering the composer readiness follow-up and verification.
-- Moved RAF-25 / BKP-015 to Todo because BKP-014 is now complete and it is the next sync-related implementation candidate.
+- Implemented and merged RAF-25 / BKP-015, then added a follow-up deployment note after the Vercel build fix.
 - Moved stale governance issue RAF-41 out of In Progress and back to Backlog.
 - Left duplicate/deferred cards non-actionable rather than treating them as active work.
 
 ## Next Candidate
 
-Next implementation candidate: BKP-015 / RAF-25 - Delta Xero sync.
+Next implementation candidate: BKP-018 - rules evaluation for newly synced Xero bank transactions.
 
 Why:
 
-- BKP-014 initial sync is now complete.
-- BKP-015 is the next sync card and blocks BKP-018 rules evaluation.
+- BKP-014 initial sync and BKP-015 delta sync are now complete.
+- BKP-015 emits `xero/bank_transaction.created`, which is the downstream trigger BKP-018 needs.
 - BKP-025 / RAF-39 was inspected but is marked Duplicate and deferred to RAF-35, so it should not be implemented unless the product direction changes.
 
 ## Workspace Notes
