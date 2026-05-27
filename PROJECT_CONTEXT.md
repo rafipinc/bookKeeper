@@ -1,6 +1,6 @@
 # Project Context - bookkeeping-app
 
-Last updated: 2026-05-27
+Last updated: 2026-05-27 (BKP-018 implementation)
 Maintainer: every coding agent before ending a material session
 
 This is the living source of truth for low-token development. Codex and Claude Code must read this before implementation and must update it before handing off.
@@ -41,19 +41,14 @@ Do not implement duplicate/deferred legacy cards unless Rafi explicitly reactiva
 
 ## Active Work
 
-Active card: BKP-017 / RAF-44 - rules engine schema migration.
+Active card: BKP-018 / RAF-45 - rules evaluator Inngest job.
 
-Current local state to verify before continuing:
-
-- Branch: `develop`.
-- Dirty files were present on 2026-05-27:
-  - `lib/supabase/types.ts`
-  - `supabase/migrations/0013_rules_engine_schema.sql`
-  - `tests/db/`
-  - `lib/inngest/functions/xero-tenant-delta-sync 2.ts`
-  - `lib/inngest/functions/xero-tenant-delta-sync.test 2.ts`
-  - `phase-2/specs/0004-ai-reconciliation-queue.md`
-- The two files ending in ` 2.ts` look like accidental local duplicates. Inspect before deleting; do not remove user work blindly.
+- Branch: `bkp-018-rules-evaluator-job` (off `bkp-017-rules-engine-schema`).
+- Added `lib/inngest/functions/rules-evaluator.ts` + tests; registered in `lib/inngest/functions/index.ts`.
+- Triggers on `xero/bank_transaction.created`, concurrency key `event.data.xeroTenantId` cap 4.
+- On first match (flat conditions, AND within group / OR across groups, priority asc) inserts `transaction_rule_matches` row with `suggestion_source='rule'`. Re-runs delete prior rule-source matches for the txn before inserting (idempotent).
+- On no match emits `xero/bank_transaction.no_rule_match` for BKP-026.
+- Untracked `xero-tenant-delta-sync 2.ts` duplicates from previous session still present in working tree — not yet cleaned up.
 
 ## Context Budget
 
@@ -138,6 +133,13 @@ pnpm dev:inngest
 
 ## Recent Session Log
 
+### 2026-05-27 - BKP-018 rules evaluator
+
+- Implemented Inngest function `rules-evaluator` (`lib/inngest/functions/rules-evaluator.ts`) with pure `evaluateRules` core for unit-test coverage.
+- Unit tests cover: no rules, no match, single match + action resolution, first-match-wins by priority, AND within group, OR across groups, between operator, empty-conditions rule does not match.
+- Verification: `pnpm typecheck`, `pnpm lint`, `pnpm test` — all pass (49 tests).
+- Next: open PR `[BKP-018] rules evaluator Inngest job`, then move to BKP-026 (AI suggestion service).
+
 ### 2026-05-27 - Workflow hardening
 
 - Added this living context file.
@@ -146,10 +148,11 @@ pnpm dev:inngest
 
 ## Verification
 
-Documentation-only workflow change:
+BKP-018 evaluator:
 
-- Reviewed `AGENTS.md`, `CLAUDE.md`, `HANDOFF.md`, and `PROJECT_CONTEXT.md` diff/content.
-- No app verification commands were run because no application code changed.
+- `pnpm typecheck` clean.
+- `pnpm lint` clean.
+- `pnpm test` — 13 files / 49 tests passing, including 9 new rules-evaluator tests.
 
 ## Known Blockers or Risks
 
