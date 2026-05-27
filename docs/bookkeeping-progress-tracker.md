@@ -58,12 +58,12 @@ Updated Linear on 2026-05-27:
 
 ## Next Candidate
 
-Next implementation candidate: BKP-018 - rules evaluation for newly synced Xero bank transactions.
+Next implementation candidate: BKP-017 / RAF-27 - rules engine schema.
 
 Why:
 
 - BKP-014 initial sync and BKP-015 delta sync are now complete.
-- BKP-015 emits `xero/bank_transaction.created`, which is the downstream trigger BKP-018 needs.
+- BKP-017 is the remaining schema dependency before BKP-018 can consume `xero/bank_transaction.created`.
 - BKP-025 / RAF-39 was inspected but is marked Duplicate and deferred to RAF-35, so it should not be implemented unless the product direction changes.
 
 ## Workspace Notes
