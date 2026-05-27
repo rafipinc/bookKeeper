@@ -17,11 +17,24 @@ Phase 2.1 Xero push-to-accounting work is complete on `develop`:
 - BKP-023 / RAF-33: invoice composer and publish to Xero.
 - BKP-024 / RAF-34: bill capture, AI extraction, attachment upload, and publish to Xero.
 
+**BKP-017 / RAF-44 — rules engine schema — files written, pending `supabase db push` + final verification:**
+
+- `supabase/migrations/0013_rules_engine_schema.sql` — all five tables + RLS + indexes. Also includes the BKP-026 columns on `transaction_rule_matches` upfront (`suggestion_source`, `ai_confidence`, `ai_model`).
+- `tests/db/rules-rls.test.ts` — four mock-based isolation tests (tenant A/B visibility + cross-tenant insert block).
+- `vitest.config.ts` — added `tests/db/**` to include patterns.
+- Feature spec: `phase-2/specs/0004-ai-reconciliation-queue.md` (source of truth for the full reconciliation feature — BKP-017, 018, 026, 019).
+
+**Still to do for BKP-017:**
+
+1. Create a feature branch off `develop` (`git switch -c bkp-017-rules-engine-schema`).
+2. Run `supabase db push` locally to apply the migration and confirm it runs cleanly.
+3. Run `supabase gen types typescript --local > lib/database.types.ts` to regenerate types.
+4. Run `pnpm typecheck && pnpm lint && pnpm test` — all must pass.
+5. Open PR titled `[BKP-017] rules engine schema migration`.
+
 ## Next Card
 
-Start with BKP-017 / RAF-44: rules engine schema migration.
-
-Before editing, inspect the current dirty worktree. On 2026-05-27 it contained BKP-017-looking changes and two duplicate-looking ` 2.ts` files. Do not delete or overwrite user work without inspecting it.
+BKP-017 / RAF-44 — complete the steps above, then move to BKP-018 / RAF-45 (rules evaluator Inngest job).
 
 ## Low-Token Workflow
 
