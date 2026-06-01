@@ -33,23 +33,26 @@ export default function AddTransactionForm({
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <label className="text-sm">
+          <span className="mb-1 block text-[var(--text-secondary)]">Amount</span>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[var(--text-secondary)] select-none">$</span>
+            <input
+              className="bkp-input w-full py-2 pl-7 pr-3"
+              inputMode="decimal"
+              name="amount"
+              placeholder="0.00"
+              required
+              type="text"
+            />
+          </div>
+        </label>
+
+        <label className="text-sm">
           <span className="mb-1 block text-[var(--text-secondary)]">Type</span>
           <select className="bkp-input w-full px-3 py-2" defaultValue="expense" name="type">
             <option value="expense">Expense</option>
             <option value="income">Income</option>
           </select>
-        </label>
-
-        <label className="text-sm">
-          <span className="mb-1 block text-[var(--text-secondary)]">Amount (USD)</span>
-          <input
-            className="bkp-input w-full px-3 py-2"
-            inputMode="decimal"
-            name="amount"
-            placeholder="0.00"
-            required
-            type="text"
-          />
         </label>
 
         <label className="text-sm">
@@ -63,7 +66,7 @@ export default function AddTransactionForm({
             <option value="">Select category</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
-                {category.name} ({category.kind})
+                {category.name}
               </option>
             ))}
           </select>
