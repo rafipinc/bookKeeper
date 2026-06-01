@@ -11,6 +11,7 @@ export type RawMatch = {
   accepted_at: string | null;
   override_at: string | null;
   ai_model: string | null;
+  ai_confidence: number | null;
 };
 
 export type QueueItem = {
@@ -25,6 +26,16 @@ export type QueueItem = {
 };
 
 export type SuggestionStatus = "no-suggestion" | "pending" | "accepted" | "overridden";
+
+export type ConfidenceLevel = "high" | "medium" | "low";
+
+export function getConfidenceLevel(match: RawMatch | null): ConfidenceLevel | null {
+  if (!match || match.suggestion_source === "rule") return null;
+  if (match.ai_confidence === null) return null;
+  if (match.ai_confidence >= 0.8) return "high";
+  if (match.ai_confidence >= 0.5) return "medium";
+  return "low";
+}
 
 export function getSuggestionStatus(match: RawMatch | null): SuggestionStatus {
   if (!match) return "no-suggestion";
@@ -46,7 +57,7 @@ export async function loadQueueItems(
          id, suggestion_source,
          suggested_category_id, suggested_contact_id,
          suggested_project_id, suggested_tax_rate_id,
-         action_applied, accepted_at, override_at, ai_model
+         action_applied, accepted_at, override_at, ai_model, ai_confidence
        )`,
     )
     .eq("platform_tenant_id", platformTenantId)

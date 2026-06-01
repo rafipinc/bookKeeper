@@ -33,6 +33,38 @@ export async function acceptSuggestion(matchId: string): Promise<AcceptResult> {
   return { error: null };
 }
 
+export type BulkAcceptResult = { error: string | null };
+
+export async function bulkAcceptSuggestions(
+  matchIds: string[],
+): Promise<BulkAcceptResult> {
+  if (matchIds.length === 0) return { error: null };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated." };
+  }
+
+  const { error } = await supabase
+    .from("transaction_rule_matches")
+    .update({
+      action_applied: true,
+      accepted_at: new Date().toISOString(),
+    })
+    .in("id", matchIds);
+
+  if (error) {
+    return { error: "Could not bulk accept suggestions. Try again." };
+  }
+
+  revalidatePath("/reconcile", "layout");
+  return { error: null };
+}
+
 export type OverrideFields = {
   suggested_category_id: string | null;
   suggested_contact_id: string | null;
