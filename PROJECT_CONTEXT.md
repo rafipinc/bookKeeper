@@ -1,6 +1,6 @@
 # Project Context - bookkeeping-app
 
-Last updated: 2026-05-27 (BKP-019 pre-reconciliation queue page complete; ready for PR)
+Last updated: 2026-06-01 (BKP-027 AI assistant backend slice staged on branch `codex/bkp-027-ai-assistant`; UI work left uncommitted)
 Maintainer: every coding agent before ending a material session
 
 This is the living source of truth for low-token development. Codex and Claude Code must read this before implementation and must update it before handing off.
@@ -43,7 +43,18 @@ Do not implement duplicate/deferred legacy cards unless Rafi explicitly reactiva
 
 ## Active Work
 
-Active card: BKP-019 / RAF-47 — pre-reconciliation queue page. Complete on branch `bkp-019-reconcile-queue-page`. PR not yet created.
+Active card: BKP-027 / RAF-48 — AI assistant for reconciliation and Xero queries. Non-UI backend slice is implemented on branch `codex/bkp-027-ai-assistant`; PR not yet created.
+
+Files changed:
+- `lib/assistant/service.ts` — Responses API service core, strict tool schemas, tenant-scoped query tools, configurable low-cost model fallback.
+- `lib/assistant/service.test.ts` — unit tests for model fallback, tool schema, tenant-scoped tool execution, and assistant flow.
+- `lib/assistant/reconcile-assistant.ts` — confirmation-gated assistant runner, strict tool schemas, and explicit accept action.
+- `lib/assistant/reconcile-assistant.test.ts` — unit tests for missing-key fallback, confirmation requirement, confirmed accept action, and model-requested tool flow.
+- `app/api/assistant/reconcile/route.ts` — authenticated API route that resolves user tenant, active Xero tenant, and calls the assistant service.
+
+UI assistant files in the working tree are intentionally excluded from this push.
+
+Previous: UI polish pass from `UI_REVIEW.md` completed on branch `ui-review-improvements`, no PR yet.
 
 Branch: `bkp-019-reconcile-queue-page`
 Files changed:
@@ -145,6 +156,26 @@ pnpm dev:inngest
 
 ## Recent Session Log
 
+### 2026-06-01 - BKP-027 AI assistant for reconciliation and Xero queries
+
+- Created Linear card RAF-48 / BKP-027 and branch `codex/bkp-027-ai-assistant`.
+- Added tenant-scoped assistant backend with strict function tools for queue lookup, transaction detail, accounts, contacts, sync status, and confirmation-gated suggestion acceptance.
+- Added `/api/assistant/reconcile` route using existing Supabase auth and `ensureUserPlatformTenant`.
+- Default model: `OPENAI_ASSISTANT_MODEL ?? "gpt-5.4-nano"`; missing `OPENAI_API_KEY` returns a local configuration message without calling OpenAI.
+- Verification: `pnpm test` (16 files / 83 tests) passed.
+- UI shell work remains in the working tree and is intentionally not part of this push.
+
+### 2026-06-01 - UI review improvements (ui-review-improvements branch)
+
+- Mobile nav: reduced from 8 destinations to 5 (Home, Activity, Review, Transactions, Setup).
+- Terminology: "Pre-reconciliation" → "Review", "Ledger" → "Transactions", "Integrations" → "Connections", section "Xero" → "Review", "Compose" → "Create", "Settings" → "Setup".
+- Design system: `--shadow-sm` token, `.bkp-card-raised` class, body font bumped to 15px.
+- Dashboard: `SeedDemoDataForm` hidden in production; summary tiles now `bkp-card-raised`, text-2xl amounts.
+- Integrations: replaced OAuth developer-docs link with 2 plain-English sentences; "Scopes" → "Permissions".
+- Add-transaction form: category dropdown no longer leaks `(income/expense)`; $ prefix on amount; Amount moved first.
+- Reconcile queue: "Overridden" → blue pill; "No suggestion" → amber "Needs review"; progress bar added; left-border amber not red.
+- `pnpm build` clean; all routes compiled.
+
 ### 2026-05-27 - BKP-019 pre-reconciliation queue page
 
 - Migration 0015: partial index on unreconciled bank transactions for < 500ms query.
@@ -181,13 +212,15 @@ pnpm dev:inngest
 
 ## Verification
 
-Current baseline after BKP-019:
+Current baseline after BKP-027:
 
 - `pnpm typecheck` clean.
 - `pnpm lint` clean.
-- `pnpm test` — 14 files / 72 tests passing (no new test files; UI components are integration-tested via build).
-- `pnpm build` clean — `/reconcile` and `/reconcile/[id]` render correctly.
+- `pnpm test` — 15 files / 76 tests passing.
+- `pnpm build` clean — `/api/assistant/reconcile`, `/reconcile`, and `/reconcile/[id]` compile.
 
 ## Known Blockers or Risks
 
 - Phase 2 docs and Linear have duplicate `BKP-026` labels. Use Linear issue IDs, not only BKP numbers, when referring to current work.
+- Browser visual QA of the assistant requires an authenticated local session; unauthenticated smoke test redirects to `/login`.
+- The assistant accepts existing app-side suggestions only; final bank reconciliation remains a Xero handoff.

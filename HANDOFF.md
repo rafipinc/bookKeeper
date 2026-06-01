@@ -1,6 +1,6 @@
 # Handoff
 
-Last updated: 2026-05-27
+Last updated: 2026-06-01
 
 ## Read First
 
@@ -30,7 +30,9 @@ AI-assisted reconciliation queue progress:
 
 ## Next Card
 
-Reconciliation queue slice (BKP-017 → BKP-018 → BKP-026 → BKP-019) is complete. Check Linear Backlog for the next active card.
+BKP-027 / RAF-48 — AI assistant for reconciliation and Xero queries has a committed non-UI backend slice on `codex/bkp-027-ai-assistant`. The assistant UI files remain in the local working tree and are intentionally excluded from this push.
+
+Immediate next action: if the UI slice is reactivated, continue from the uncommitted `/reconcile` assistant files; otherwise move to the next Linear card.
 
 ## Low-Token Workflow
 
@@ -58,6 +60,7 @@ pnpm dev:inngest
 - `pnpm dev` clears known stale inherited Supabase/Xero env vars before starting Next, so `.env.local` is used.
 - In local development, the Inngest client defaults to dev mode even if `INNGEST_EVENT_KEY` is present.
 - OpenAI extraction uses `OPENAI_API_KEY` and `OPENAI_BILL_EXTRACTION_MODEL`, defaulting to `gpt-5`.
+- Reconciliation assistant uses `OPENAI_API_KEY` and `OPENAI_ASSISTANT_MODEL`, defaulting to `gpt-5.4-nano`.
 - Bill attachments use `BILL_ATTACHMENTS_BUCKET`, defaulting to `xero-bill-documents`.
 - GitHub CLI is integrated and available locally: `gh` 2.92.0 at `/opt/homebrew/bin/gh`. Use it for PR creation/review where helpful.
 
