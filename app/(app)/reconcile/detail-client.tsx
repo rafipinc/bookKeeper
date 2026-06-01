@@ -1,9 +1,9 @@
 "use client";
 
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useOptimistic, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
 
 import { acceptSuggestion, overrideSuggestion } from "@/app/actions/reconcile";
 
@@ -11,6 +11,15 @@ import { getSuggestionStatus, type RawMatch } from "./data";
 
 type DetailAccount = { xero_account_id: string; name: string; code: string | null };
 type DetailContact = { xero_contact_id: string; name: string };
+
+export type MatchHistoryRow = {
+  id: string;
+  suggestion_source: "rule" | "ai";
+  ruleName: string | null;
+  ruleId: string | null;
+  matched_at: string;
+  action_applied: boolean;
+};
 
 export type DetailTransaction = {
   id: string;
@@ -154,15 +163,24 @@ export function DetailClient({
   transaction,
   accounts,
   contacts,
+  allMatches,
+  prevId,
+  nextId,
+  rawJson,
 }: {
   transaction: DetailTransaction;
   accounts: DetailAccount[];
   contacts: DetailContact[];
+  allMatches: MatchHistoryRow[];
+  prevId: string | null;
+  nextId: string | null;
+  rawJson: Record<string, unknown> | null;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [showOverride, setShowOverride] = useState(false);
   const [rawExpanded, setRawExpanded] = useState(false);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
 
   const [optimistic, applyOptimistic] = useOptimistic<
     OptimisticDetail,
@@ -186,6 +204,36 @@ export function DetailClient({
   );
 
   const [accepting, setAccepting] = useState(false);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      )
+        return;
+      if (e.key === "ArrowUp" && prevId) {
+        e.preventDefault();
+        router.push(`/reconcile/${prevId}`);
+      }
+      if (e.key === "ArrowDown" && nextId) {
+        e.preventDefault();
+        router.push(`/reconcile/${nextId}`);
+      }
+      if (e.key === "Enter" && optimistic.status === "pending" && !showOverride) {
+        e.preventDefault();
+        void handleAccept();
+      }
+      if ((e.key === "o" || e.key === "O") && optimistic.status === "pending" && !showOverride) {
+        e.preventDefault();
+        setShowOverride(true);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prevId, nextId, optimistic.status, showOverride, router]);
 
   const isSpend =
     transaction.type === "SPEND" || transaction.type === "SPEND-TRANSFER";
@@ -272,6 +320,15 @@ export function DetailClient({
                         ? `AI${optimistic.match.ai_model ? ` · ${optimistic.match.ai_model}` : ""}`
                         : "Rule"}
                     </span>
+                    {optimistic.match.suggestion_source === "rule" &&
+                      allMatches.find((m) => m.id === optimistic.match?.id)?.ruleName && (
+                        <a
+                          className="underline underline-offset-2 hover:text-[var(--ink)]"
+                          href={`/settings/rules/${allMatches.find((m) => m.id === optimistic.match?.id)?.ruleId}`}
+                        >
+                          {allMatches.find((m) => m.id === optimistic.match?.id)?.ruleName}
+                        </a>
+                      )}
                   </dd>
                 </div>
                 {optimistic.status !== "pending" && (
@@ -325,12 +382,71 @@ export function DetailClient({
           )}
 
           {!optimistic.match && (
-            <p className="text-sm text-[var(--text-muted)]">
-              No rule or AI suggestion is available for this transaction. Create a rule to
-              auto-categorise similar transactions in the future.
-            </p>
+            <>
+              <p className="mb-3 text-sm text-[var(--text-muted)]">
+                No rule or AI suggestion matched this transaction.
+              </p>
+              <a
+                className="inline-flex items-center gap-1 text-sm font-medium text-[var(--ink)] hover:underline"
+                href={`/settings/rules/new?description=${encodeURIComponent(transaction.description ?? "")}&amount=${transaction.total_cents ?? 0}`}
+              >
+                Create a rule from this transaction
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </>
           )}
         </section>
+
+        {/* Match history collapsible */}
+        {allMatches.length > 0 && (
+          <section aria-label="Match history" className="bkp-card mb-6 overflow-hidden">
+            <button
+              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--paper)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ink)]"
+              onClick={() => setHistoryExpanded((v) => !v)}
+              type="button"
+            >
+              Match history ({allMatches.length})
+              <span aria-hidden className="text-xs">
+                {historyExpanded ? "▲" : "▼"}
+              </span>
+            </button>
+            {historyExpanded && (
+              <ul className="divide-y divide-[var(--border)] border-t border-[var(--border)]">
+                {allMatches.map((m) => (
+                  <li
+                    key={m.id}
+                    className="flex items-center justify-between px-4 py-2.5 text-sm"
+                  >
+                    <span className="text-[var(--text-primary)]">
+                      {m.suggestion_source === "rule" && m.ruleName ? (
+                        <a
+                          className="underline underline-offset-2 hover:text-[var(--ink)]"
+                          href={`/settings/rules/${m.ruleId}`}
+                        >
+                          {m.ruleName}
+                        </a>
+                      ) : (
+                        "AI"
+                      )}
+                    </span>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {new Date(m.matched_at).toLocaleDateString()}
+                    </span>
+                    <span
+                      className={
+                        m.action_applied
+                          ? "text-xs text-[var(--income)]"
+                          : "text-xs text-[var(--text-muted)]"
+                      }
+                    >
+                      {m.action_applied ? "Applied" : "Skipped"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
 
         {/* Raw Xero data collapsible */}
         <section aria-label="Raw Xero data" className="bkp-card overflow-hidden">
@@ -348,10 +464,13 @@ export function DetailClient({
           </button>
           {rawExpanded && (
             <div className="border-t border-[var(--border)] bg-[var(--paper)] px-4 py-3" id="raw-xero-data">
-              <p className="text-xs text-[var(--text-muted)]">
-                Raw JSON data is not included in this view. Open the transaction in Xero to see
-                full details.
-              </p>
+              {rawJson ? (
+                <pre className="overflow-x-auto whitespace-pre-wrap break-all text-xs text-[var(--text-secondary)]">
+                  {JSON.stringify(rawJson, null, 2)}
+                </pre>
+              ) : (
+                <p className="text-xs text-[var(--text-muted)]">No raw data available.</p>
+              )}
             </div>
           )}
         </section>
