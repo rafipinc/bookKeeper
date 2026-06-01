@@ -1,6 +1,6 @@
 # Project Context - bookkeeping-app
 
-Last updated: 2026-05-27 (BKP-026 ai-suggestion Inngest function complete; ready for PR + BKP-019)
+Last updated: 2026-05-27 (BKP-019 pre-reconciliation queue page complete; ready for PR)
 Maintainer: every coding agent before ending a material session
 
 This is the living source of truth for low-token development. Codex and Claude Code must read this before implementation and must update it before handing off.
@@ -43,16 +43,24 @@ Do not implement duplicate/deferred legacy cards unless Rafi explicitly reactiva
 
 ## Active Work
 
-Active card: BKP-026 / RAF-46 — AI suggestion service. Implementation complete on branch `bkp-026-ai-suggestion-service`. PR not yet created — create before handing off.
+Active card: BKP-019 / RAF-47 — pre-reconciliation queue page. Complete on branch `bkp-019-reconcile-queue-page`. PR not yet created.
 
-Branch: `bkp-026-ai-suggestion-service`
+Branch: `bkp-019-reconcile-queue-page`
 Files changed:
-- `lib/inngest/functions/ai-suggestion.ts` — new Inngest function (id: `ai-suggestion`, retries: 0, event: `xero/bank_transaction.no_rule_match`).
-- `lib/inngest/functions/ai-suggestion.test.ts` — 17 tests covering valid + error paths.
-- `lib/inngest/functions/index.ts` — registered `aiSuggestion`.
-No migration needed: schema columns (`suggestion_source`, `ai_confidence`, `ai_model`) were added upfront in migration 0013.
+- `supabase/migrations/0015_reconcile_queue_index.sql` — partial index on `xero_bank_transactions(platform_tenant_id, xero_tenant_id, date desc) WHERE is_reconciled=false`.
+- `app/actions/reconcile.ts` — server actions: `acceptSuggestion`, `overrideSuggestion`.
+- `app/(app)/reconcile/data.ts` — shared data-loading types + `loadQueueItems` helper.
+- `app/(app)/reconcile/queue-client.tsx` — client list with filter tabs, summary bar, optimistic accept.
+- `app/(app)/reconcile/detail-client.tsx` — client detail with accept/override form.
+- `app/(app)/reconcile/page.tsx` — list page (handles no-connection, caught-up, and list states).
+- `app/(app)/reconcile/[id]/page.tsx` — detail page with two-pane desktop layout.
+- `app/(app)/reconcile/layout.tsx` — wraps both routes with mobile `+` FAB.
+- `app/(app)/reconcile/compose-fab.tsx` — floating action button (Invoice / Bill).
+- `app/(app)/nav-links.tsx` — added "Pre-reconciliation" under Xero section.
 
-Next: BKP-019 / RAF-47 — pre-reconciliation queue page.
+BKP-017 → BKP-018 → BKP-026 → BKP-019 complete. Reconciliation queue slice done.
+
+Next: see Backlog for next card. No immediate follow-on card queued.
 
 ## Context Budget
 
@@ -137,6 +145,17 @@ pnpm dev:inngest
 
 ## Recent Session Log
 
+### 2026-05-27 - BKP-019 pre-reconciliation queue page
+
+- Migration 0015: partial index on unreconciled bank transactions for < 500ms query.
+- Server actions: `acceptSuggestion` and `overrideSuggestion` (RLS enforces tenant isolation).
+- `/reconcile` page: three states — no connection, caught-up (empty), and queue list.
+- `/reconcile/[id]` page: two-pane on desktop (left=list, right=detail); single-pane on mobile.
+- Client components use `useOptimistic` for instant accept/override feedback, then `router.refresh()`.
+- `+` FAB on mobile opens Invoice/Bill compose sheet.
+- Nav: "Pre-reconciliation" added under new "Xero" section.
+- `pnpm build` clean. All 72 tests pass.
+
 ### 2026-05-27 - BKP-026 AI suggestion service
 
 - Implemented Inngest function `ai-suggestion` (`lib/inngest/functions/ai-suggestion.ts`).
@@ -162,11 +181,12 @@ pnpm dev:inngest
 
 ## Verification
 
-Current baseline after BKP-026:
+Current baseline after BKP-019:
 
 - `pnpm typecheck` clean.
 - `pnpm lint` clean.
-- `pnpm test` — 14 files / 72 tests passing, including 17 new ai-suggestion tests.
+- `pnpm test` — 14 files / 72 tests passing (no new test files; UI components are integration-tested via build).
+- `pnpm build` clean — `/reconcile` and `/reconcile/[id]` render correctly.
 
 ## Known Blockers or Risks
 

@@ -23,20 +23,14 @@ AI-assisted reconciliation queue progress:
 - BKP-018 / RAF-45 — rules evaluator Inngest job: complete.
 - Feature spec: `phase-2/specs/0004-ai-reconciliation-queue.md` remains the source of truth for the full reconciliation feature slice.
 
-## Completed Card
+## Completed Cards
 
-BKP-026 / RAF-46 — AI suggestion service. Complete on branch `bkp-026-ai-suggestion-service`. PR not yet created.
+- BKP-026 / RAF-46 — AI suggestion service: merged to `develop`.
+- BKP-019 / RAF-47 — Pre-reconciliation queue page: complete on `bkp-019-reconcile-queue-page`. PR not yet created.
 
 ## Next Card
 
-BKP-019 / RAF-47 — Pre-reconciliation queue page.
-
-Minimal context for the next agent:
-
-- Read `PROJECT_CONTEXT.md`, this file, and Linear RAF-47 only.
-- Use `phase-2/specs/0004-ai-reconciliation-queue.md` only for the BKP-019 section unless blocked.
-- BKP-026 branch must be merged to `develop` before BKP-019 starts.
-- Keep one card per branch and PR.
+Reconciliation queue slice (BKP-017 → BKP-018 → BKP-026 → BKP-019) is complete. Check Linear Backlog for the next active card.
 
 ## Low-Token Workflow
 
