@@ -29,7 +29,7 @@ function formatDate(value: string | null) {
 
 function getScopeSummary(scopes: string[]) {
   if (scopes.length === 0) {
-    return "No scopes recorded";
+    return "None recorded";
   }
 
   if (scopes.length <= 3) {
@@ -48,7 +48,7 @@ function useConnectionToast() {
     const error = params.get("error");
 
     if (connected === "1") {
-      setToast({ kind: "success", message: "Xero connected. Your organisation is ready to sync." });
+      setToast({ kind: "success", message: "Xero connected. Your organization is ready to sync." });
       params.delete("connected");
     } else if (error) {
       setToast({ kind: "error", message: `Xero connection failed: ${error.replaceAll("_", " ")}` });
@@ -192,7 +192,7 @@ function MobileConnectionCard({ connection, onToast }: { connection: XeroConnect
       </div>
       <dl className="mt-4 space-y-3 text-sm">
         <div>
-          <dt className="text-xs uppercase text-[var(--text-muted)]">Scopes</dt>
+          <dt className="text-xs uppercase text-[var(--text-muted)]">Permissions</dt>
           <dd className="mt-1 break-words text-[var(--text-primary)]" title={connection.scopes.join(", ")}>
             {getScopeSummary(connection.scopes)}
           </dd>
@@ -230,9 +230,9 @@ export function IntegrationsClient({ connections }: { connections: XeroConnectio
             <a className="bkp-button mt-6 inline-flex h-11 items-center justify-center px-5 text-sm" href="/api/xero/connect">
               Connect Xero
             </a>
-            <a className="mt-4 block text-xs font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline" href="https://developer.xero.com/documentation/guides/oauth2/scopes/" rel="noreferrer" target="_blank">
-              Read about the permissions we request
-            </a>
+            <p className="mt-4 text-xs leading-5 text-[var(--text-secondary)]">
+              We can read your bank transactions and chart of accounts, and publish invoices and bills on your behalf. We cannot move money or access your tax records.
+            </p>
           </div>
         </div>
       ) : (
@@ -248,7 +248,7 @@ export function IntegrationsClient({ connections }: { connections: XeroConnectio
                   <th className="px-4 py-3 font-medium">Organisation</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Connected on</th>
-                  <th className="px-4 py-3 font-medium">Scopes</th>
+                  <th className="px-4 py-3 font-medium">Permissions</th>
                   <th className="px-4 py-3 font-medium">Last synced</th>
                   <th className="px-4 py-3 text-right font-medium">
                     <span className="sr-only">Actions</span>

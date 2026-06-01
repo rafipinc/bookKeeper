@@ -40,11 +40,11 @@ function StatusPill({ status }: { status: SuggestionStatus }) {
     },
     overridden: {
       label: "Overridden",
-      className: "bg-[var(--income-bg)] text-[var(--income)]",
+      className: "bg-[#eff6ff] text-[#1d4ed8]",
     },
     "no-suggestion": {
-      label: "No suggestion",
-      className: "bg-[var(--expense-bg)] text-[var(--expense)]",
+      label: "Needs review",
+      className: "bg-[#fffbeb] text-[#92400e]",
     },
   };
   const { label, className } = map[status];
@@ -107,7 +107,7 @@ function TransactionRow({
     <li
       className={`relative border-b border-[var(--border)] last:border-b-0 ${
         isSelected ? "bg-[var(--paper)]" : "bg-[var(--surface)]"
-      } ${needsReview ? "border-l-2 border-l-[var(--expense)]" : ""}`}
+      } ${needsReview ? "border-l-2 border-l-[#d97706]" : ""}`}
     >
       <div className="flex items-start">
         {isCheckable && (
@@ -281,7 +281,7 @@ export function QueueClient({
     { value: "pending", label: "Pending" },
     { value: "accepted", label: "Accepted" },
     { value: "overridden", label: "Overridden" },
-    { value: "no-suggestion", label: "No suggestion" },
+    { value: "no-suggestion", label: "Needs review" },
   ];
 
   return (
@@ -308,10 +308,26 @@ export function QueueClient({
           onClick={() => setFilter("no-suggestion")}
           type="button"
         >
-          <span className="font-semibold text-[var(--expense)]">{needAttention}</span> need
-          attention
+          <span className="font-semibold text-[#b45309]">{needAttention}</span> need a
+          look
         </button>
       </div>
+
+      {/* Progress bar */}
+      {total > 0 && (
+        <div className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-2">
+          <div className="mb-1 flex items-center justify-between text-xs text-[var(--text-secondary)]">
+            <span>{acceptedCount} of {total} reviewed</span>
+            <span>{Math.round((acceptedCount / total) * 100)}%</span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--border)]">
+            <div
+              className="h-full rounded-full bg-[var(--income)] transition-all duration-300"
+              style={{ width: `${(acceptedCount / total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Bulk toolbar */}
       {pendingCount > 0 && (

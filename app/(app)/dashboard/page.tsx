@@ -80,20 +80,20 @@ export default async function DashboardPage() {
 
   return (
     <section className="space-y-6">
-      <h1 className="text-xl font-semibold">Dashboard</h1>
+      <h1 className="text-2xl font-semibold">Dashboard</h1>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="bkp-card p-4">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">Income</p>
-          <p className="bkp-money mt-1 text-lg font-semibold text-[var(--income)]">{formatMoney(totalIncome)}</p>
+        <div className="bkp-card-raised p-5">
+          <p className="text-sm font-medium text-[var(--text-secondary)]">Income</p>
+          <p className="bkp-money mt-1 text-2xl font-semibold text-[var(--income)]">{formatMoney(totalIncome)}</p>
         </div>
-        <div className="bkp-card p-4">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">Expenses</p>
-          <p className="bkp-money mt-1 text-lg font-semibold">{formatMoney(totalExpense)}</p>
+        <div className="bkp-card-raised p-5">
+          <p className="text-sm font-medium text-[var(--text-secondary)]">Expenses</p>
+          <p className="bkp-money mt-1 text-2xl font-semibold">{formatMoney(totalExpense)}</p>
         </div>
-        <div className="bkp-card p-4">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">Net</p>
-          <p className={`bkp-money mt-1 text-lg font-semibold ${net >= 0 ? "text-[var(--income)]" : "text-[var(--expense)]"}`}>
+        <div className="bkp-card-raised p-5">
+          <p className="text-sm font-medium text-[var(--text-secondary)]">Net</p>
+          <p className={`bkp-money mt-1 text-2xl font-semibold ${net >= 0 ? "text-[var(--income)]" : "text-[var(--expense)]"}`}>
             {net >= 0 ? "+" : "-"}
             {formatMoney(Math.abs(net))}
           </p>
@@ -101,7 +101,7 @@ export default async function DashboardPage() {
       </div>
 
       <AddTransactionForm categories={categories ?? []} />
-      <SeedDemoDataForm />
+      {process.env.NODE_ENV !== 'production' && <SeedDemoDataForm />}
 
       <div className="bkp-card overflow-hidden">
         <div className="border-b border-[var(--border)] px-4 py-3">
