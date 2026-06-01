@@ -1,6 +1,6 @@
 "use client";
 
-import { FilePlus2, LayoutDashboard, ListChecks, Plug, ReceiptText, ScanLine, Sliders } from "lucide-react";
+import { Clock, FilePlus2, LayoutDashboard, ListChecks, Plug, ReceiptText, ScanLine, Sliders } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,6 +9,7 @@ const navSections = [
     label: "Bookkeeping",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/activity", label: "Activity", icon: Clock },
       { href: "/ledger", label: "Ledger", icon: ListChecks },
     ],
   },
@@ -37,6 +38,7 @@ const navSections = [
 function isNavActive(pathname: string, href: string): boolean {
   if (href === "/reconcile") return pathname === "/reconcile" || pathname.startsWith("/reconcile/");
   if (href === "/settings/rules") return pathname === "/settings/rules" || pathname.startsWith("/settings/rules/");
+  if (href === "/activity") return pathname === "/activity" || pathname.startsWith("/activity/");
   return pathname === href;
 }
 
