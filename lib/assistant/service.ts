@@ -57,18 +57,6 @@ export type AssistantRunResult =
       toolTrace: AssistantToolExecutionResult[];
     };
 
-type QueryLike = {
-  select: (columns: string, options?: { count?: "exact"; head?: boolean }) => QueryLike;
-  eq: (column: string, value: string | boolean | null) => QueryLike;
-  in: (column: string, values: string[]) => QueryLike;
-  ilike: (column: string, value: string) => QueryLike;
-  order: (column: string, options?: { ascending?: boolean }) => QueryLike;
-  limit: (value: number) => QueryLike;
-  maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
-  single?: () => Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
-  update?: (values: Record<string, unknown>) => QueryLike;
-};
-
 type AssistantSupabaseClient = Pick<TypedSupabaseClient, "from" | "rpc">;
 
 type OpenAIChatResponse = {
@@ -87,6 +75,23 @@ type OpenAIChatResponse = {
   }>;
   model?: string;
 };
+
+type OpenAIChatMessage = NonNullable<NonNullable<OpenAIChatResponse["choices"]>[number]["message"]>;
+
+type AssistantEnv = Partial<NodeJS.ProcessEnv>;
+
+type AssistantToolArgs = {
+  queue_summary: Record<string, never>;
+  sync_status: Record<string, never>;
+  queue_detail: { transaction_id: string };
+  account_lookup: { query: string; limit?: number };
+  contact_lookup: { query: string; limit?: number };
+  accept_suggestion: { match_id: string; confirm: boolean };
+};
+
+type ParsedToolArguments<N extends AssistantToolName> =
+  | { ok: true; value: AssistantToolArgs[N] }
+  | { ok: false; error: string };
 
 const assistantToolDefinitions = [
   {
@@ -190,7 +195,7 @@ const assistantToolDefinitions = [
   },
 ] as const;
 
-export function resolveAssistantModel(env: NodeJS.ProcessEnv = process.env): string {
+export function resolveAssistantModel(env: AssistantEnv = process.env): string {
   const candidate = env.OPENAI_ASSISTANT_MODEL?.trim();
   return candidate && candidate.length > 0 ? candidate : DEFAULT_MODEL;
 }
@@ -542,8 +547,6 @@ export async function executeAssistantTool(
   context: AssistantTenantContext,
   toolCall: AssistantToolCall,
 ): Promise<AssistantToolExecutionResult> {
-  const args = parseToolArguments(toolCall.name, toolCall.arguments);
-
   switch (toolCall.name) {
     case "queue_summary":
       return {
@@ -551,7 +554,8 @@ export async function executeAssistantTool(
         name: toolCall.name,
         output: await loadQueueSummary(supabase, context),
       };
-    case "queue_detail":
+    case "queue_detail": {
+      const args = parseToolArguments("queue_detail", toolCall.arguments);
       return {
         toolCallId: toolCall.id,
         name: toolCall.name,
@@ -562,7 +566,9 @@ export async function executeAssistantTool(
               error: args.error,
             },
       };
-    case "account_lookup":
+    }
+    case "account_lookup": {
+      const args = parseToolArguments("account_lookup", toolCall.arguments);
       return {
         toolCallId: toolCall.id,
         name: toolCall.name,
@@ -575,7 +581,9 @@ export async function executeAssistantTool(
             )
           : { ok: false, error: args.error },
       };
-    case "contact_lookup":
+    }
+    case "contact_lookup": {
+      const args = parseToolArguments("contact_lookup", toolCall.arguments);
       return {
         toolCallId: toolCall.id,
         name: toolCall.name,
@@ -588,13 +596,15 @@ export async function executeAssistantTool(
             )
           : { ok: false, error: args.error },
       };
+    }
     case "sync_status":
       return {
         toolCallId: toolCall.id,
         name: toolCall.name,
         output: await loadSyncStatus(context),
       };
-    case "accept_suggestion":
+    case "accept_suggestion": {
+      const args = parseToolArguments("accept_suggestion", toolCall.arguments);
       return {
         toolCallId: toolCall.id,
         name: toolCall.name,
@@ -602,6 +612,7 @@ export async function executeAssistantTool(
           ? await acceptSuggestion(supabase, context, args.value.match_id, args.value.confirm)
           : { ok: false, error: args.error },
       };
+    }
   }
 }
 
@@ -610,7 +621,7 @@ export async function createAssistantService(deps: {
   userId: string;
   apiKey?: string;
   fetchImpl?: typeof fetch;
-  env?: NodeJS.ProcessEnv;
+  env?: AssistantEnv;
 }) {
   const model = resolveAssistantModel(deps.env ?? process.env);
   const fetchImpl = deps.fetchImpl ?? fetch;
@@ -715,7 +726,7 @@ async function callOpenAI(input: {
   fetchImpl: typeof fetch;
   model: string;
   messages: Array<Record<string, unknown>>;
-}): Promise<{ ok: true; message: NonNullable<OpenAIChatResponse["choices"]>[number]["message"] } | { ok: false; reason: string }> {
+}): Promise<{ ok: true; message: OpenAIChatMessage } | { ok: false; reason: string }> {
   try {
     const response = await input.fetchImpl(OPENAI_CHAT_URL, {
       method: "POST",
@@ -763,6 +774,10 @@ function buildSystemPrompt(context: AssistantTenantContext): string {
   }.`;
 }
 
+function parseToolArguments<N extends AssistantToolName>(
+  name: N,
+  rawArguments: string,
+): ParsedToolArguments<N>;
 function parseToolArguments(
   name: AssistantToolName,
   rawArguments: string,
@@ -888,7 +903,7 @@ function escapeLike(value: string): string {
   return value.replace(/[%_\\]/g, "\\$&");
 }
 
-function valueOrNull<T extends Record<string, unknown>>(value: Record<string, unknown> | null, key: string): string | null {
+function valueOrNull(value: Record<string, unknown> | null, key: string): string | null {
   if (!value) return null;
   return asNullableString(value[key]);
 }

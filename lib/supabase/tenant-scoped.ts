@@ -49,7 +49,7 @@ export async function createTenantScopedClient(
 }
 
 export async function ensureUserPlatformTenant(
-  supabase: TypedSupabaseClient,
+  supabase: Pick<TypedSupabaseClient, "rpc">,
   userId: string,
 ): Promise<string> {
   const { data, error } = await supabase.rpc("ensure_user_platform_tenant", {

@@ -24,8 +24,10 @@ type QueryResult = {
   count?: number;
 };
 
+type QueryMock = { [method: string]: unknown };
+
 function createQuery(result: QueryResult) {
-  const query: any = {
+  const query: QueryMock = {
     select: vi.fn(() => query),
     eq: vi.fn(() => query),
     in: vi.fn(() => query),
@@ -44,7 +46,7 @@ function createQuery(result: QueryResult) {
 }
 
 function makeSupabaseMock(responses: Record<string, QueryResult[]>) {
-  const queries: Record<string, any[]> = {};
+  const queries: Record<string, QueryMock[]> = {};
   const from = vi.fn((table: string) => {
     const queue = responses[table] ?? [];
     const result = queue.shift() ?? { data: null, error: null };
@@ -85,13 +87,13 @@ function makeContext(overrides: Partial<Awaited<ReturnType<typeof loadAssistantT
 
 describe("resolveAssistantModel", () => {
   it("falls back to the cheap default model", () => {
-    expect(resolveAssistantModel({ OPENAI_ASSISTANT_MODEL: "" } as NodeJS.ProcessEnv)).toBe(
+    expect(resolveAssistantModel({ OPENAI_ASSISTANT_MODEL: "" })).toBe(
       "gpt-4.1-nano",
     );
   });
 
   it("uses the configured assistant model when set", () => {
-    expect(resolveAssistantModel({ OPENAI_ASSISTANT_MODEL: "gpt-4o-mini" } as NodeJS.ProcessEnv)).toBe(
+    expect(resolveAssistantModel({ OPENAI_ASSISTANT_MODEL: "gpt-4o-mini" })).toBe(
       "gpt-4o-mini",
     );
   });
@@ -318,7 +320,7 @@ describe("assistant flow", () => {
       userId: "user-1",
       apiKey: "test-key",
       fetchImpl: mocks.fetch,
-      env: { OPENAI_API_KEY: "test-key", OPENAI_ASSISTANT_MODEL: "" } as NodeJS.ProcessEnv,
+      env: { OPENAI_API_KEY: "test-key", OPENAI_ASSISTANT_MODEL: "" },
     });
 
     const result = await service.run("Summarise the queue");
