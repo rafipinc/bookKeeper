@@ -214,5 +214,6 @@ Current baseline after BKP-019:
 
 - Phase 2 docs and Linear have duplicate `BKP-026` labels. Use Linear issue IDs, not only BKP numbers, when referring to current work.
 - Supabase project `book-keeper` is paused. Restore it (or recreate from migrations) before any demo; the Xero connection will need re-consent because refresh tokens lapse after 60 days idle.
-- `codex/bkp-027-ai-assistant` (AI assistant backend + chat UI) is not merged; it is not wired into any page on `develop`.
+- `codex/bkp-027-ai-assistant` (AI assistant backend + chat UI) is not merged; it is not wired into any page on `develop`. Typecheck, lint, 83/83 tests and build pass on it as of `660eecd`.
+- Every Vercel **Preview** deployment fails (since June) because the Preview environment lacks env vars; build stops at `Missing env var: NEXT_PUBLIC_SUPABASE_URL`. Production deploys from `develop` succeed. Fix in Vercel → Settings → Environment Variables by enabling the vars for Preview, then redeploy.
 - Product direction is under review (BAS automation for a client). See the 2026-11-27 BAS readiness entry before picking up any card.
