@@ -145,6 +145,19 @@ pnpm dev:inngest
 
 ## Recent Session Log
 
+### 2026-11-27 - BAS readiness review (no code changes)
+
+Context: a paying client wants BAS statements generated automatically from reconciled transactions, with a model driving reconciliation. Requirements meeting is Monday 2026-11-30. Architecture may change after it; do not start BAS work before Rafi confirms direction.
+
+- Repo has no GST/BAS logic at all. `CLAUDE.md` currently lists tax as out of scope, so BAS needs a new ADR and a rule change.
+- Confirmed from Xero docs: `BankTransactions` is spend/receive money only and gives no access to bank statements or feeds. The `/reconcile` queue therefore shows transactions already coded in Xero, not raw feed lines. Resolves the open question below.
+- `acceptSuggestion` / `overrideSuggestion` only update `transaction_rule_matches`; nothing is written back to Xero. `rules.mode = 'auto_apply'` is never read. AI suggestions never set `suggested_tax_rate_id`.
+- Xero's BAS report endpoint returns published BAS reports only (AU orgs, scope `accounting.reports.taxreports.read`, not currently requested). Draft BAS figures must be computed by us from line-level tax data.
+- Journals endpoint needs Xero's Advanced tier (AUD 1,445/month plus security assessment). Plan to compute from BankTransactions, Invoices, Payments, CreditNotes and ManualJournals instead; only BankTransactions are synced today, and line items live only in `raw_json`.
+- Xero developer terms bar using API data to train, fine-tune, adapt or enhance AI models, and require user consent before passing API data to a third party (relevant to the OpenAI calls).
+- Delta sync filters `Status=="AUTHORISED"`, so a transaction deleted in Xero is never updated locally. Fix before any BAS maths depends on this table.
+- Direct ATO lodgement needs DSP registration and the Operational Security Framework; treat as out of scope for a first version.
+
 ### 2026-11-27 - Architecture assessment (no code changes)
 
 - Re-verified `develop`: typecheck, lint, 72/72 unit tests, and build all pass.
@@ -200,3 +213,6 @@ Current baseline after BKP-019:
 ## Known Blockers or Risks
 
 - Phase 2 docs and Linear have duplicate `BKP-026` labels. Use Linear issue IDs, not only BKP numbers, when referring to current work.
+- Supabase project `book-keeper` is paused. Restore it (or recreate from migrations) before any demo; the Xero connection will need re-consent because refresh tokens lapse after 60 days idle.
+- `codex/bkp-027-ai-assistant` (AI assistant backend + chat UI) is not merged; it is not wired into any page on `develop`.
+- Product direction is under review (BAS automation for a client). See the 2026-11-27 BAS readiness entry before picking up any card.
