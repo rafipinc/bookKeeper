@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
 
 import { loadQueueItems } from "./data";
-import { ReconcileAssistant } from "./assistant-client";
 import { QueueClient } from "./queue-client";
 
 export default async function ReconcilePage() {
@@ -84,8 +83,10 @@ export default async function ReconcilePage() {
         <QueueClient items={items} />
       </div>
 
-      {/* Right pane — assistant on desktop; floating drawer on mobile */}
-      <ReconcileAssistant />
+      {/* Right pane — detail placeholder (desktop only) */}
+      <div className="hidden flex-1 items-center justify-center bg-[var(--paper)] md:flex">
+        <p className="text-sm text-[var(--text-muted)]">Select a transaction to view details</p>
+      </div>
     </div>
   );
 }
