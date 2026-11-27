@@ -1,6 +1,6 @@
 # Project Context - bookkeeping-app
 
-Last updated: 2026-05-27 (BKP-019 pre-reconciliation queue page complete; ready for PR)
+Last updated: 2026-11-27 (full-architecture assessment ahead of client handover / rework)
 Maintainer: every coding agent before ending a material session
 
 This is the living source of truth for low-token development. Codex and Claude Code must read this before implementation and must update it before handing off.
@@ -144,6 +144,15 @@ pnpm dev:inngest
 - PR body must reference the Linear card URL and summarize verification.
 
 ## Recent Session Log
+
+### 2026-11-27 - Architecture assessment (no code changes)
+
+- Re-verified `develop`: typecheck, lint, 72/72 unit tests, and build all pass.
+- Supabase project `book-keeper` is INACTIVE (paused), so no live data could be checked.
+- Local `develop` is 6 commits ahead of `origin/develop` (BKP-021, BKP-022, RAF-29, RAF-36, UI polish), not pushed.
+- `codex/bkp-027-ai-assistant` (assistant backend) is unmerged; `app/(app)/reconcile/assistant-client.tsx` is its untracked UI half.
+- Gaps found: initial sync emits no `bank_transaction.created` events (backfilled lines never get suggestions); `rules-rls.test.ts` tests a mock, not Postgres; middleware only gates `/dashboard` and `/ledger` (the `(app)` layout redirects the rest); `OPENAI_API_KEY` missing from `.env.local`.
+- Open question: Xero `BankTransactions` are entered spend/receive transactions, not raw bank-feed statement lines. Check this before relying on the queue for feed reconciliation.
 
 ### 2026-05-27 - BKP-019 pre-reconciliation queue page
 
