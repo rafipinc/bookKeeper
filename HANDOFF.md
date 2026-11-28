@@ -1,6 +1,10 @@
 # Handoff
 
-Last updated: 2026-05-27
+Last updated: 2026-11-28
+
+## Immediate Next Action
+
+Production readiness work is on merged into local `develop` (not yet pushed). The live Supabase DB is already migrated through 0017. Before the next deploy, Rafi needs to finish the Vercel, Inngest, Xero and Supabase dashboard steps in `docs/deployment.md`, then check `GET /api/health` on the production URL.
 
 ## Read First
 
@@ -38,9 +42,9 @@ For each session:
 
 1. Read `PROJECT_CONTEXT.md`.
 2. Read this file.
-3. Read the active Linear card.
+3. Read the active Linear card, if there is one.
 4. Read only directly relevant code/docs.
-5. Work one card only.
+5. Work one task only.
 6. Run targeted verification.
 7. Update `PROJECT_CONTEXT.md`.
 8. Update this handoff only if the immediate next action changed.
@@ -66,5 +70,5 @@ pnpm dev:inngest
 - Money stays in integer cents.
 - RLS belongs in Postgres.
 - Preserve cash-basis accounting rules.
-- Keep work scoped to the active Linear card.
-- PR title format: `[BKP-NNN] short description`.
+- Keep work scoped to the active task.
+- PR title: a short plain description (e.g. `Fix Xero redirect on Vercel`). No card number is required; add `[BKP-NNN]` only if a card exists.

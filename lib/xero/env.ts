@@ -1,9 +1,24 @@
+import { appUrl, isLocalhostUrl, isVercelDeployment } from "@/lib/app-url";
+
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
     throw new Error(`Missing env var: ${name}`);
   }
   return value;
+}
+
+/**
+ * XERO_REDIRECT_URI when set, otherwise `${appUrl()}/api/xero/callback`.
+ * A localhost value is ignored on Vercel deployments. Whatever this returns
+ * must also be registered on the Xero app at developer.xero.com.
+ */
+function resolveRedirectUri(): string {
+  const configured = process.env.XERO_REDIRECT_URI?.trim();
+  if (configured && !(isVercelDeployment() && isLocalhostUrl(configured))) {
+    return configured;
+  }
+  return `${appUrl()}/api/xero/callback`;
 }
 
 /**
@@ -18,7 +33,7 @@ export const xeroEnv = {
     return requireEnv("XERO_CLIENT_SECRET");
   },
   get redirectUri() {
-    return requireEnv("XERO_REDIRECT_URI");
+    return resolveRedirectUri();
   },
 };
 

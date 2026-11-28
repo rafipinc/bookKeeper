@@ -1,6 +1,6 @@
 # Project Context - bookkeeping-app
 
-Last updated: 2026-11-27 (full-architecture assessment ahead of client handover / rework)
+Last updated: 2026-11-28 (production readiness: Supabase restored, live DB migrated, Vercel fixes on branch)
 Maintainer: every coding agent before ending a material session
 
 This is the living source of truth for low-token development. Codex and Claude Code must read this before implementation and must update it before handing off.
@@ -43,7 +43,9 @@ Do not implement duplicate/deferred legacy cards unless Rafi explicitly reactiva
 
 ## Active Work
 
-Active card: BKP-019 / RAF-47 — pre-reconciliation queue page. Complete on branch `bkp-019-reconcile-queue-page`. PR not yet created.
+Production readiness (no Linear card): merged into local `develop` (not yet pushed). Changes: shared `appUrl()` with Vercel URL fallback (`lib/app-url.ts`) used by the Xero routes and `xeroEnv.redirectUri`; `GET /api/health`; basic security headers; CI now runs on `develop` with pnpm 10 / Node 24; migrations 0016 (bill attachments bucket) and 0017 (revoke token functions from `authenticated`); `docs/deployment.md` runbook; fuller `.env.example`. Vercel and dashboard steps in `docs/deployment.md` are still Rafi's to do.
+
+Previous card: BKP-019 / RAF-47 — pre-reconciliation queue page. Complete on branch `bkp-019-reconcile-queue-page`. PR not yet created.
 
 Branch: `bkp-019-reconcile-queue-page`
 Files changed:
@@ -66,7 +68,7 @@ Next: see Backlog for next card. No immediate follow-on card queued.
 
 Default budget for a new implementation session:
 
-- Mandatory read set: this file, `HANDOFF.md`, active Linear card.
+- Mandatory read set: this file, `HANDOFF.md`, and the active Linear card if there is one.
 - Optional read set: maximum 2 directly relevant local docs, such as one ADR and one design/spec section.
 - Code search: use targeted `rg` queries. Do not browse the whole tree.
 - File reads: read only files you will edit or depend on directly.
@@ -139,11 +141,21 @@ pnpm dev:inngest
 
 - Follow `docs/branching-strategy.md`.
 - Do not merge to `main` without explicit instruction from Rafi.
-- Keep one card per branch/PR.
-- PR title format: `[BKP-NNN] short description`.
-- PR body must reference the Linear card URL and summarize verification.
+- Keep one task per branch/PR.
+- PR title: a short plain description (e.g. `Fix Xero redirect on Vercel`). No card number is required; add `[BKP-NNN]` only if a card exists.
+- PR body must summarize verification, and link the Linear card when there is one.
 
 ## Recent Session Log
+
+### 2026-11-28 - Production readiness for Vercel
+
+- Restored the paused Supabase project `book-keeper` (now ACTIVE_HEALTHY).
+- Live DB was missing migrations 0014 and 0015, so rules-evaluator and ai-suggestion upserts failed in production. Applied both, plus new 0016 (private `xero-bill-documents` bucket with tenant-folder storage policies; the bucket never existed) and 0017 (revoke `xero_encrypt/decrypt_token` and `xero_lock_connection_refresh` from `authenticated`, which let any tenant member decrypt Xero tokens). Live DB now has 17/17 migrations.
+- Live Production findings: `/api/inngest` returns 500 because `INNGEST_SIGNING_KEY` is not set in Vercel Production, so no background jobs run. The Xero connect flow redirects to `http://localhost:3000`, so `NEXT_PUBLIC_APP_URL` is unset or localhost in Vercel.
+- `book-keeper.vercel.app` is an unrelated project. The real production URL is `https://book-keeper-rafael-s-projects21.vercel.app`.
+- CI had never run: the workflow triggered only on `main` (which does not exist), and its pnpm 9.15.4 cannot install this repo (`packages field missing or empty`).
+- Both stored Xero connections were last rotated 2026-06-01, past Xero's 60-day refresh-token limit, so Xero must be reconnected.
+- Code fixes on branch `chore/vercel-production-readiness` (see Active Work).
 
 ### 2026-11-27 - BAS readiness review (no code changes)
 
@@ -203,7 +215,14 @@ Context: a paying client wants BAS statements generated automatically from recon
 
 ## Verification
 
-Current baseline after BKP-019:
+2026-11-28 on `chore/vercel-production-readiness`:
+
+- `pnpm typecheck`, `pnpm lint` clean; `pnpm test` 15 files / 81 tests passing; `pnpm build` clean.
+- Clean-copy install and build with pnpm 10.34.9 pass. `next start` in production mode with `VERCEL_ENV=production` and a localhost `NEXT_PUBLIC_APP_URL` baked in: Xero connect redirects to the Vercel production URL, `/api/health` returns 503 listing the missing config, and the security headers are set.
+- `/api/health` against the restored Supabase project reports `supabase: ok`.
+- Not verified: the CI `rls` job (no Docker locally), a real Vercel build of this branch, and the Xero, Inngest and magic-link flows end to end on the live site.
+
+Previous baseline after BKP-019:
 
 - `pnpm typecheck` clean.
 - `pnpm lint` clean.
@@ -211,6 +230,11 @@ Current baseline after BKP-019:
 - `pnpm build` clean — `/reconcile` and `/reconcile/[id]` render correctly.
 
 ## Known Blockers or Risks
+
+- Vercel Production is missing `INNGEST_SIGNING_KEY`/`INNGEST_EVENT_KEY` and has no usable `NEXT_PUBLIC_APP_URL`. Install the Inngest Vercel integration, and add the production Xero callback and Supabase auth redirect URLs. Full checklist: `docs/deployment.md`.
+- Migrations are not applied on deploy. Apply each new migration to the live project before its code deploys.
+- `docs/branching-strategy.md` says `main` is production, but the repo has only `develop`, which Vercel deploys to Production. Rafi to confirm which is intended.
+- Supabase project appears to be on the free plan (it auto-paused). Upgrade before onboarding a real company.
 
 - Phase 2 docs and Linear have duplicate `BKP-026` labels. Use Linear issue IDs, not only BKP numbers, when referring to current work.
 - Supabase project `book-keeper` is paused. Restore it (or recreate from migrations) before any demo; the Xero connection will need re-consent because refresh tokens lapse after 60 days idle.
