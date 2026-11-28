@@ -205,9 +205,17 @@ begin
     raise exception 'User A could see tenant B business';
   end if;
 
-  select count(*) into v_count from public.categories;
+  -- Each business also gets 11 seeded default categories (seed_default_categories).
+  select count(*) into v_count from public.categories where is_default = false;
   if v_count <> 1 then
-    raise exception 'Expected user A to see 1 category by membership, got %', v_count;
+    raise exception 'Expected user A to see 1 custom category by membership, got %', v_count;
+  end if;
+
+  select count(*) into v_count
+  from public.categories
+  where platform_tenant_id <> '70000000-0000-0000-0000-000000000001';
+  if v_count <> 0 then
+    raise exception 'User A could see % categories from another tenant', v_count;
   end if;
 
   select count(*) into v_count from public.transactions;
