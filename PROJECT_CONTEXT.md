@@ -152,7 +152,7 @@ pnpm dev:inngest
 - Restored the paused Supabase project `book-keeper` (now ACTIVE_HEALTHY).
 - Live DB was missing migrations 0014 and 0015, so rules-evaluator and ai-suggestion upserts failed in production. Applied both, plus new 0016 (private `xero-bill-documents` bucket with tenant-folder storage policies; the bucket never existed) and 0017 (revoke `xero_encrypt/decrypt_token` and `xero_lock_connection_refresh` from `authenticated`, which let any tenant member decrypt Xero tokens). Live DB now has 17/17 migrations.
 - Live Production findings: `/api/inngest` returns 500 because `INNGEST_SIGNING_KEY` is not set in Vercel Production, so no background jobs run. The Xero connect flow redirects to `http://localhost:3000`, so `NEXT_PUBLIC_APP_URL` is unset or localhost in Vercel.
-- `book-keeper.vercel.app` is an unrelated project. The real production URL is `https://book-keeper-rafael-s-projects21.vercel.app`.
+- `book-keeper.vercel.app` is an unrelated project. The real production URL is `https://book-keeper-eosin.vercel.app`.
 - CI had never run: the workflow triggered only on `main` (which does not exist), and its pnpm 9.15.4 cannot install this repo (`packages field missing or empty`).
 - Both stored Xero connections were last rotated 2026-06-01, past Xero's 60-day refresh-token limit, so Xero must be reconnected.
 - Code fixes on branch `chore/vercel-production-readiness` (see Active Work).
@@ -231,7 +231,7 @@ Previous baseline after BKP-019:
 
 ## Known Blockers or Risks
 
-- Vercel Production is missing `INNGEST_SIGNING_KEY`/`INNGEST_EVENT_KEY` and has no usable `NEXT_PUBLIC_APP_URL`. Install the Inngest Vercel integration, and add the production Xero callback and Supabase auth redirect URLs. Full checklist: `docs/deployment.md`.
+- Live `/api/health` (2026-11-28, commit f94e7dc) shows Vercel Production is missing `SUPABASE_SERVICE_ROLE_KEY`, `XERO_CLIENT_ID`/`XERO_CLIENT_SECRET`, `INNGEST_SIGNING_KEY`/`INNGEST_EVENT_KEY` and `OPENAI_API_KEY`. The app URL now resolves to `https://book-keeper-eosin.vercel.app` automatically. CI (both jobs) passes after the RLS test fix in PR #9. Install the Inngest Vercel integration, and add the production Xero callback and Supabase auth redirect URLs. Full checklist: `docs/deployment.md`.
 - Migrations are not applied on deploy. Apply each new migration to the live project before its code deploys.
 - `docs/branching-strategy.md` says `main` is production, but the repo has only `develop`, which Vercel deploys to Production. Rafi to confirm which is intended.
 - Supabase project appears to be on the free plan (it auto-paused). Upgrade before onboarding a real company.

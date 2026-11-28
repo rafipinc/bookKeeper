@@ -7,7 +7,7 @@ How the live app is wired, and the checklist for a working deploy.
 | Piece | Where | Notes |
 | --- | --- | --- |
 | Web app + API routes | Vercel project `book-keeper` | `develop` is the Production branch. Every push to `develop` deploys to Production. |
-| Production URL | `https://book-keeper-rafael-s-projects21.vercel.app` | `book-keeper.vercel.app` is **not** this project (another account owns it). Add a custom domain before onboarding a company. |
+| Production URL | `https://book-keeper-eosin.vercel.app` (Vercel's canonical production domain; `book-keeper-rafael-s-projects21.vercel.app` also works) | `book-keeper.vercel.app` is **not** this project (another account owns it). Add a custom domain before onboarding a company. |
 | Database, auth, storage | Supabase project `book-keeper` (`iaenvnkvwbotdtzxxpyc`, ap-southeast-2) | Free-plan projects pause after a week idle. Upgrade to Pro before real use. |
 | Background jobs | Inngest Cloud app `bookkeeping-app`, served from `/api/inngest` | Xero sync, publish, rules and AI suggestions all run here. |
 | Accounting | Xero app at developer.xero.com | OAuth callback is `/api/xero/callback`. |
@@ -15,7 +15,7 @@ How the live app is wired, and the checklist for a working deploy.
 ## Verify a deploy
 
 ```bash
-curl -s https://book-keeper-rafael-s-projects21.vercel.app/api/health
+curl -s https://book-keeper-eosin.vercel.app/api/health
 ```
 
 The response is `200` with `"ok": true` when every required connector is configured and Supabase answers, and `503` otherwise. Each check reads `ok`, `dev`, `missing_config` or `unreachable`. OpenAI is reported but optional.
@@ -42,8 +42,8 @@ Preview deployments use the same Supabase project as Production unless you give 
 
 ## External dashboards
 
-1. **Supabase -> Authentication -> URL Configuration.** Set Site URL to the production URL. Add `https://book-keeper-rafael-s-projects21.vercel.app/auth/callback` (and any custom domain's `/auth/callback`) to Redirect URLs. Magic-link sign-in redirects to `window.location.origin/auth/callback`, so an unlisted domain falls back to the Site URL.
-2. **Xero developer portal -> your app -> Configuration.** Add `https://book-keeper-rafael-s-projects21.vercel.app/api/xero/callback` as a redirect URI, keeping the localhost one for development.
+1. **Supabase -> Authentication -> URL Configuration.** Set Site URL to the production URL. Add `https://book-keeper-eosin.vercel.app/auth/callback` (and any custom domain's `/auth/callback`) to Redirect URLs. Magic-link sign-in redirects to `window.location.origin/auth/callback`, so an unlisted domain falls back to the Site URL.
+2. **Xero developer portal -> your app -> Configuration.** Add `https://book-keeper-eosin.vercel.app/api/xero/callback` as a redirect URI, keeping the localhost one for development.
 3. **Inngest.** Install the Inngest integration from the Vercel Marketplace and link it to `book-keeper`. It sets both Inngest keys for Production and Preview and syncs the app on every deploy. Without the integration, copy the keys from app.inngest.com and sync `https://<production URL>/api/inngest` manually after each deploy.
 4. **Reconnect Xero** from Settings -> Integrations once steps 1 to 3 are done. Xero refresh tokens expire after 60 days without use.
 
