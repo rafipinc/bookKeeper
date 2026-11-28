@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { appUrl } from "@/lib/app-url";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserPlatformTenant } from "@/lib/supabase/tenant-scoped";
 import { summarizeValue, xeroDebug, xeroError } from "@/lib/xero/debug";
@@ -71,11 +72,7 @@ export async function GET(): Promise<Response> {
 }
 
 function baseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    "http://localhost:3000"
-  );
+  return appUrl();
 }
 
 function redirectToSettings(errorCode: string): Response {
